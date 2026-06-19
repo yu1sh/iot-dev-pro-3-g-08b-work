@@ -7,7 +7,7 @@ import csv
 
 SERVER = "localhost"
 WAITING_PORT = 8765
-CSV_FILE = "out.csv"
+CSV_FILE = "sensor_readings.csv"
 
 LOOP_INTERVAL = 5
 
