@@ -1,34 +1,36 @@
+#!/usr/bin/env /usr/bin/python3
+# -*- coding: utf-8 -*-
+
 import csv
 from pathlib import Path
-
 from logger_setup import setup_logger
 
 logger = setup_logger(__name__)
 
-CSV_FILE = Path(__file__).parent.parent / "outputs" / "sensor_readings.csv"
+CSV_DIR = Path(__file__).parent.parent / "outputs"
+CSV_FILE = CSV_DIR / "sensor_readings.csv"
+CSV_DIR.mkdir(exist_ok=True)
 
-
-def load_csv(filepath):
+def load_csv():
     try:
-        with open(filepath) as f:
+        with open(CSV_FILE) as f:
             all_data_iter = csv.reader(f)
             row_count = sum(1 for row in all_data_iter)
-        logger.info("Loaded CSV file path=%s rows=%s", filepath, row_count)
+        logger.info("Loaded CSV file path=%s rows=%s", CSV_FILE, row_count)
     except FileNotFoundError:
-        logger.info("CSV file not found. Creating new file path=%s", filepath)
-        with open(filepath, mode='w') as f:
+        logger.info("CSV file not found. Creating new file path=%s", CSV_FILE)
+        with open(CSV_FILE, mode='w') as f:
             write_iter = csv.writer(f)
             write_iter.writerow(["raspi_id", "tempe_dht_1", "humid_dht_1", "timestamp"])
-        logger.info("Created CSV file path=%s", filepath)
+        logger.info("Created CSV file path=%s", CSV_FILE)
 
-
-def save_csv(filepath, data):
+def save_csv(data):
     try:
-        with open(filepath, mode='a') as f:
+        with open(CSV_FILE, mode='a') as f:
             write_iter = csv.writer(f)
             for row in data:
                 write_iter.writerow(row)
-        logger.info("Saved CSV rows path=%s rows=%s", filepath, data)
+        logger.info("Saved CSV rows path=%s rows=%s", CSV_FILE, data)
     except OSError:
-        logger.exception("Failed to save CSV path=%s rows=%s", filepath, data)
+        logger.exception("Failed to save CSV path=%s rows=%s", CSV_FILE, data)
         raise
