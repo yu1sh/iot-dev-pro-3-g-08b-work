@@ -1,9 +1,12 @@
+#!/usr/bin/env /usr/bin/python3
+# -*- coding: utf-8 -*-
+
 import sys
 import time
 import socket
 import threading
 import json
-from csv_storage import CSV_FILE, load_csv, save_csv
+from csv_storage import load_csv, save_csv
 from logger_setup import setup_logger
 
 logger = setup_logger(__name__)
@@ -35,8 +38,8 @@ def server(server_v1=SERVER, waiting_port_v1=WAITING_PORT):
             dht_humid = data0["humid_dht_1"]
             timestamp = data0["timestamp"]
 
-            load_csv(CSV_FILE)
-            save_csv(CSV_FILE, [[raspi_id, dht_temp, dht_humid, timestamp]])
+            load_csv()
+            save_csv([[raspi_id, dht_temp, dht_humid, timestamp]])
 
             time.sleep(LOOP_INTERVAL)
         except (UnicodeDecodeError, json.JSONDecodeError, KeyError, IndexError, TypeError):

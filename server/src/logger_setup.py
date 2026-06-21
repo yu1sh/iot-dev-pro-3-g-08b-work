@@ -1,3 +1,6 @@
+#!/usr/bin/env /usr/bin/python3
+# -*- coding: utf-8 -*-
+
 import logging
 from pathlib import Path
 from datetime import datetime
