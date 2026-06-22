@@ -5,13 +5,15 @@ import sys
 import json
 import dht22_takemoto as dht22
 import time
-import datetime
+from datetime import datetime
 from logger_setup import setup_logger
 
 logger = setup_logger(__name__)
 
 dht22_instance = dht22.DHT22(gpio=26)
 raspi_id = "raspi_001"
+sensor_id = "dht_1"
+status = "OK"
 
 SERVER = 'localhost'
 WAITING_PORT = 8765
@@ -60,6 +62,8 @@ def client_test(hostname_v1 = SERVER, waiting_port_v1 = WAITING_PORT, message1 =
         while True:
             dht_data = get_dht_data()
             if dht_data is None:
+                logger.warning("Failed to get DHT22 data, skipping this iteration")
+                status = "error"
                 continue
 
             tempe, humid = dht_data
@@ -67,32 +71,43 @@ def client_test(hostname_v1 = SERVER, waiting_port_v1 = WAITING_PORT, message1 =
             # socoket for receiving and sending data
             # AF_INET     : IPv4
             # SOCK_STREAM : TCP
-            socket_r_s = None
-            try:
-                socket_r_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                socket_r_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                socket_r_s.settimeout(SOCKET_TIMEOUT)
-                logger.info("Connecting to server host=%s port=%s", node_s, port_s)
-                socket_r_s.connect((node_s, port_s))
-                logger.info("Connected to server host=%s port=%s", node_s, port_s)
+            for retry_count in range(MAX_SEND_RETRY+1):
+                socket_r_s = None
+                try:
+                    socket_r_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    socket_r_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                    socket_r_s.settimeout(SOCKET_TIMEOUT)
+                    logger.info("Connecting to server host=%s port=%s", node_s, port_s)
+                    socket_r_s.connect((node_s, port_s))
+                    logger.info("Connected to server host=%s port=%s", node_s, port_s)
 
-                data_s_list = [{"raspi_id": raspi_id, "tempe_dht_1": tempe, "humid_dht_1": humid, "timestamp": str(datetime.datetime.now())}]
-                data_s_json = json.dumps(data_s_list)
-                data_s = data_s_json.encode('utf-8')
-                socket_r_s.sendall(data_s)
-                logger.info("Sent sensor data host=%s bytes=%s payload=%s", node_s, len(data_s), data_s_json)
-            except (socket.timeout, ConnectionError, OSError):
-                logger.exception("Failed to send sensor data host=%s port=%s", node_s, port_s)
-            finally:
-                if socket_r_s is not None:
-                    socket_r_s.close()
-                    logger.info("Closed client socket host=%s port=%s", node_s, port_s)
+                    data_s_list = [{"timestamp": str(datetime.now()).strftime('%Y%m%d-%H%M%S'), 
+                                    "raspi_id": raspi_id, 
+                                    "sensor_id": sensor_id, 
+                                    "tempe_v": tempe, 
+                                    "humid_v": humid, 
+                                    "status": status}]
+
+                    data_s_json = json.dumps(data_s_list)
+                    data_s = data_s_json.encode('utf-8')
+                    socket_r_s.sendall(data_s)
+                    logger.info("Sent sensor data host=%s bytes=%s payload=%s", node_s, len(data_s), data_s_json)
+                except (socket.timeout, ConnectionError, OSError):
+                    logger.exception("Failed to send sensor data host=%s port=%s", node_s, port_s)
+
+                    if retry_count < MAX_SEND_RETRY:
+                        retry_count += 1
+                        logger.info("Retrying to send data host=%s port=%s retry_count=%s", node_s, port_s, retry_count)
+                        time.sleep(WAIT_INTERVAL_RETRY)
+                    else:
+                        logger.error("Max send retry reached host=%s port=%s", node_s, port_s)
+
+                finally:
+                    if socket_r_s is not None:
+                        socket_r_s.close()
+                        logger.info("Closed client socket host=%s port=%s", node_s, port_s)
 
             time.sleep(WAIT_INTERVAL)
-
-            count = count + 1
-            if count >= MAX_SEND_RETRY:
-                break
 
     except KeyboardInterrupt:
         logger.info("Ctrl-C is hit!")
