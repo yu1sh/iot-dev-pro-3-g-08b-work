@@ -81,12 +81,14 @@ def client_test(hostname_v1 = SERVER, waiting_port_v1 = WAITING_PORT, message1 =
                     socket_r_s.connect((node_s, port_s))
                     logger.info("Connected to server host=%s port=%s", node_s, port_s)
 
-                    data_s_list = [{"timestamp": str(datetime.now()).strftime('%Y%m%d-%H%M%S'), 
+                    data_s_list = [{
+                                    "timestamp": str(datetime.now()).strftime('%Y%m%d-%H%M%S'), 
                                     "raspi_id": raspi_id, 
                                     "sensor_id": sensor_id, 
                                     "tempe_v": tempe, 
                                     "humid_v": humid, 
-                                    "status": status}]
+                                    "status": status
+                                    }]
 
                     data_s_json = json.dumps(data_s_list)
                     data_s = data_s_json.encode('utf-8')
@@ -114,7 +116,6 @@ def client_test(hostname_v1 = SERVER, waiting_port_v1 = WAITING_PORT, message1 =
         logger.info("End of this client.")
     except Exception:
         logger.exception("Unexpected client error")
-
 
 
 if __name__ == '__main__':
