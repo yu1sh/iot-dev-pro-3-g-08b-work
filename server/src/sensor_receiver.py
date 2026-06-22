@@ -16,6 +16,28 @@ WAITING_PORT = 8765
 
 LOOP_INTERVAL = 5
 
+def status_check(dht_temp, dht_humid, status):
+    if not all([dht_temp, dht_humid, status]):
+        logger.warning("Missing fields in sensor data")
+        return False
+    if dht_temp is None or dht_humid is None:
+        status = "ERROR"
+        logger.warning("Temperature or humidity is None, setting status to ERROR")
+    elif dht_humid < 0 or dht_humid > 100:
+        status = "ERROR"
+        logger.warning("Humidity out of range (0-100), setting status to ERROR")
+    elif dht_temp < -10 or dht_temp > 60:
+        status = "WARNING"
+        logger.warning("Temperature out of range (-10 to 60), setting status to WARNING")
+    elif dht_humid < 10 or dht_humid > 95:
+        status = "WARNING"
+        logger.warning("Humidity out of range (10-95), setting status to WARNING")
+    else:
+        status = "OK"
+        logger.info("Sensor data is within normal range, setting status to OK")
+
+    return status
+
 def server(server_v1=SERVER, waiting_port_v1=WAITING_PORT):
 
     stop_event = threading.Event()
@@ -33,13 +55,17 @@ def server(server_v1=SERVER, waiting_port_v1=WAITING_PORT):
             logger.info("Received JSON client=%s bytes=%s payload=%s", client_address1, len(data_r), data_r_json)
 
             data0 = data_r_list[0]
+            timestamp = data0["timestamp"]
             raspi_id = data0["raspi_id"]
+            sensor_id = data0["sensor_id"]
             dht_temp = data0["tempe_dht_1"]
             dht_humid = data0["humid_dht_1"]
-            timestamp = data0["timestamp"]
+            status = data0["status"]
+
+            checked_status = status_check(dht_temp, dht_humid, status)
 
             load_csv()
-            save_csv([[raspi_id, dht_temp, dht_humid, timestamp]])
+            save_csv([[timestamp, raspi_id, dht_temp, dht_humid, sensor_id, checked_status]])
 
             time.sleep(LOOP_INTERVAL)
         except (UnicodeDecodeError, json.JSONDecodeError, KeyError, IndexError, TypeError):
