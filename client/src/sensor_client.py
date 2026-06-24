@@ -94,6 +94,7 @@ def client_test(hostname_v1 = SERVER, waiting_port_v1 = WAITING_PORT, message1 =
                     data_s = data_s_json.encode('utf-8')
                     socket_r_s.sendall(data_s)
                     logger.info("Sent sensor data host=%s bytes=%s payload=%s", node_s, len(data_s), data_s_json)
+                    break  # 正常に送信できたため、ループを抜ける
                 except (socket.timeout, ConnectionError, OSError):
                     logger.exception("Failed to send sensor data host=%s port=%s", node_s, port_s)
 
