@@ -58,7 +58,7 @@ def client_test(hostname_v1 = SERVER, waiting_port_v1 = WAITING_PORT, message1 =
     port_s = waiting_port_v1
 
     try:
-        count = 0
+        retry_count = 0
         while True:
             dht_data = get_dht_data()
             if dht_data is None:
