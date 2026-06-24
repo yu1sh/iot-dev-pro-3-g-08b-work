@@ -59,6 +59,7 @@ def client_test(hostname_v1 = SERVER, waiting_port_v1 = WAITING_PORT, message1 =
 
     try:
         retry_count = 0
+        save_failed_data_list = []
         while True:
             dht_data = get_dht_data()
             if dht_data is None:
@@ -104,6 +105,9 @@ def client_test(hostname_v1 = SERVER, waiting_port_v1 = WAITING_PORT, message1 =
                         time.sleep(WAIT_INTERVAL_RETRY)
                     else:
                         logger.error("Max send retry reached host=%s port=%s", node_s, port_s)
+                        save_failed_data_list.extend(data_s_list)
+                        logger.info("Failed data saved: %s", save_failed_data_list)
+                        break  # 最大リトライ回数に達したため、ループを抜ける
 
                 finally:
                     if socket_r_s is not None:
