@@ -6,16 +6,16 @@
 .
 ├── README.md
 ├── requirements.txt
-├── Android/
+├── Android/                   # Android端末用
 │   └── index.html
-├── client/
+├── client/                    # センサー接続端末用
 │   ├── logs/                  # 実行時に作成
 │   │   └── sensor_client_YYYYMMDD-HHMMSS.log
 │   └── src/
 │       ├── dht22_takemoto.py
 │       ├── logger_setup.py
 │       └── sensor_client.py
-└── server/
+└── server/                    # サーバー端末用
     ├── logs/                  # 実行時に作成
     │   └── sensor_server_YYYYMMDD-HHMMSS.log
     ├── outputs/               # 実行時に作成
@@ -29,10 +29,12 @@
             └── dashboard.html
 ```
 
-- `client/src/`: センサー側で動作するクライアントプログラム
-- `server/src/`: センサーデータの受信・記録・Web表示を行うサーバープログラム
+- `client/`: センサーを接続した端末で使用するクライアント側プログラム
+- `server/`: センサーデータを受信・記録・Web表示するサーバー端末用プログラム
+- `Android/`: Android端末で表示するHTMLファイル
+- `client/src/`: クライアント側のソースコード
+- `server/src/`: サーバー側のソースコード
 - `server/src/templates/`: Webダッシュボード用のHTMLテンプレート
-- `Android/`: Android表示用のHTMLファイル
 - `client/logs/`: クライアント実行時に作成されるログ保存先
 - `server/logs/`: サーバー実行時に作成されるログ保存先
 - `server/outputs/`: 受信したセンサーデータのCSV保存先
