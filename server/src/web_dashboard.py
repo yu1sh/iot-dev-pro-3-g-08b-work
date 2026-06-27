@@ -35,7 +35,8 @@ def download():
 
 if __name__ == "__main__":
     logger.info("Start flask server. host=%s, port %s", f_host, f_port)
-    app.run(host = f_host, port = f_port, debug=True)
+    app.run(host = f_host, port = f_port, debug=True, use_reloader=False) 
+    # use_reloader=False: 開発者モードの内、自動リロードのみ無効 -> 余計なログファイル生成を解決
     # debug=True: コードを変更するたびにmainを再実行するため、その度にブラウザが追加で開く
     # debug=True: 要は自動でリロードするため、ログファイルが2個生まれるってわけ
     # 本番はセキュリティやログファイルの観点からdebug=Falseにするべき
