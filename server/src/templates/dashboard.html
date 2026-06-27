@@ -1,25 +1,29 @@
-<!DOCTYPE html>
+<!doctype html>
 
 <html lang="ja">
-    <head>
-        <meta charset="utf-8">
-        <title>Flask Example 16 (IoTデバイスプログラミング3) </title>
-    </head>
+  <head>
+    <meta charset="utf-8" />
+    <title>Flask Example 16 (IoTデバイスプログラミング3)</title>
+  </head>
 
-    <body>
-        <h1>温湿度情報</h1>
-        <table border="1">
-            <tr>
-                <td>温度(℃)</td>
-                <td>湿度(パーセント)</td>
-            </tr>
-            {% for value in input_from_python[1:] %}
-            <tr>
-                <td>{{ value[0] }}</td>
-                <td>{{ value[1] }}</td>
-            </tr>
-            {% endfor %}
-        </table>
+  <body>
+    <h1>温湿度情報</h1>
+    <table border="1">
+      <tr>
+        <td>温度(℃)</td>
+        <td>湿度(パーセント)</td>
+      </tr>
+      {% for value in input_from_python[1:] %}
+      <tr>
+        <td>{{ value[0] }}</td>
+        <td>{{ value[1] }}</td>
+      </tr>
+      {% endfor %}
+    </table>
 
-    </body>
+    <a href="/files">
+      <button type="button">CSVファイルを保存</button>
+    </a>
+  </body>
+
 </html>
