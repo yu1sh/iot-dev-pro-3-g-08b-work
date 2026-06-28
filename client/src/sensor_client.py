@@ -17,7 +17,7 @@ status = "OK"
 
 SERVER = 'localhost'
 WAITING_PORT = 8765
-MESSAGE_FROM_CLIENT = "Hello, I am a client."
+MESSAGE_FROM_CLIENT = "This is a client test message."
 
 MAX_SEND_RETRY = 3
 WAIT_INTERVAL = 5
