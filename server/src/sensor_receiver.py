@@ -11,7 +11,7 @@ from logger_setup import setup_logger
 
 logger = setup_logger(__name__)
 
-SERVER = "localhost"
+SERVER = "0.0.0.0"
 WAITING_PORT = 8765
 
 LOOP_INTERVAL = 5
