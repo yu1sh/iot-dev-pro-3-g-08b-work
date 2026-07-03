@@ -13,8 +13,8 @@ logger = setup_logger(__name__)
 
 CSV_DIR = Path(__file__).parent.parent / "outputs"
 CSV_FILE = CSV_DIR / "sensor_readings.csv"
-f_host = '0.0.0.0'
-f_port = 5001
+F_HOST = '0.0.0.0'
+F_PORT = 5001
 
 @app.route("/", methods=["GET"])
 def index():
@@ -34,8 +34,8 @@ def download():
 
 
 if __name__ == "__main__":
-    logger.info("Start flask server. host=%s, port %s", f_host, f_port)
-    app.run(host = f_host, port = f_port, debug=True, use_reloader=False) 
+    logger.info("Start flask server. host=%s, port %s", F_HOST, F_PORT)
+    app.run(host = F_HOST, port = F_PORT, debug=True, use_reloader=False) 
     # use_reloader=False: 開発者モードの内、自動リロードのみ無効 -> 余計なログファイル生成を解決
     # debug=True: コードを変更するたびにmainを再実行するため、その度にブラウザが追加で開く
     # debug=True: 要は自動でリロードするため、ログファイルが2個生まれるってわけ
