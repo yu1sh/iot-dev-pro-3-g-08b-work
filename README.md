@@ -73,6 +73,59 @@ DHT22センサーの読み取りに失敗した場合、クライアントはそ
 pip install .
 ```
 
+## 実行方法
+
+実行前に、設定ファイルを作成します。
+
+```bash
+cp client/src/.env.example client/src/.env
+cp server/src/.env.example server/src/.env
+```
+
+`client/src/.env` の `SERVER_IP` には、データを受信するサーバー端末のIPアドレスを設定します。
+
+`server/src/.env` の `SERVER_IP` はセンサー受信用サーバーの待ち受けアドレス、`PORT_NUMBER` は待ち受けポートです。通常は `.env.example` のように `SERVER_IP = "0.0.0.0"` のままで使用できます。
+
+### センサー受信サーバーを起動する
+
+サーバー端末で、Raspberry Piから送信されるセンサーデータを受信するプログラムを起動します。
+
+```bash
+python server/src/sensor_receiver.py
+```
+
+受信したデータは `server/outputs/sensor_readings.csv` に保存されます。
+
+### Webダッシュボードを起動する
+
+サーバー端末で、CSVに保存されたデータをWebブラウザから確認するためのダッシュボードを起動します。
+
+```bash
+python server/src/web_dashboard.py
+```
+
+`server/src/.env` の設定が `.env.example` のままの場合、ブラウザで次のURLにアクセスします。
+
+```text
+http://サーバー端末のIPアドレス:5001/
+```
+
+同じ端末から確認する場合は、次のURLでもアクセスできます。
+
+```text
+http://127.0.0.1:5001/
+```
+
+### センサークライアントを起動する
+
+DHT22センサーを接続したRaspberry Pi側で、センサー値を読み取ってサーバーへ送信するプログラムを起動します。
+
+```bash
+python client/src/sensor_client.py
+```
+
+送信に失敗したデータや、DHT22センサーの読み取りに失敗したデータは `client/outputs/failed_sensor_readings.csv` に保存されます。
+
 ## Raspberry Piでの自動起動設定
 
 `systemd/iot-sensor_client.service` は、Raspberry Pi起動時に `client/src/sensor_client.py` を自動実行するためのserviceファイルです。
