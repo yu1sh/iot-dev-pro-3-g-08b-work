@@ -1,21 +1,27 @@
 #!/usr/bin/env /usr/bin/python3
 # -*- coding: utf-8 -*-
 
+import os
 import sys
 import json
 import dht22_takemoto as dht22
 import time
+from dotenv import load_dotenv
 from datetime import datetime
 from logger_setup import setup_logger
 from csv_writter import load_csv, save_csv
 
 logger = setup_logger(__name__)
 
+load_dotenv(verbose=True)
+
+load_dotenv('.env')
+
 RASPI_ID = "raspi_001"
 SENSOR_ID = "dht_1"
 STATUS = "OK"
 
-SERVER = 'localhost'
+SERVER = os.environ.get('SERVER_IP')
 WAITING_PORT = 8765
 MESSAGE_FROM_CLIENT = "This is a client test message."
 
