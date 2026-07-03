@@ -68,13 +68,13 @@ def client_test(hostname_v1 = SERVER, waiting_port_v1 = WAITING_PORT, message1 =
             dht_data = get_dht_data()
             if dht_data is None:
                 logger.warning("Failed to get DHT22 data, skipping this iteration")
-                save_local_csv(str(datetime.now()).strftime('%Y%m%d-%H%M%S'), None, None, "ERROR")
+                save_local_csv(datetime.now().strftime('%Y%m%d-%H%M%S'), None, None, "ERROR")
                 continue
 
             tempe, humid = dht_data
             current_status = status
             data_s_list = [{
-                            "timestamp": str(datetime.now()).strftime('%Y%m%d-%H%M%S'),
+                            "timestamp": datetime.now().strftime('%Y%m%d-%H%M%S'),
                             "raspi_id": raspi_id,
                             "sensor_id": sensor_id,
                             "tempe_dht_1": tempe,
