@@ -23,7 +23,7 @@ SENSOR_ID = "dht_1"
 STATUS = "OK"
 
 SERVER = os.environ.get('SERVER_IP')
-WAITING_PORT = 8765
+WAITING_PORT = os.environ.get('PORT_NUMBER')
 MESSAGE_FROM_CLIENT = "This is a client test message."
 
 MAX_SEND_RETRY = 3
