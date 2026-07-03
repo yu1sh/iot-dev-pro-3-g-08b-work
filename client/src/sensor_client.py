@@ -25,6 +25,11 @@ WAIT_INTERVAL = 10
 WAIT_INTERVAL_RETRY = 5
 SOCKET_TIMEOUT = 10
 
+def save_local_csv(timestamp, tempe, humid, current_status):
+    load_csv()
+    save_csv([[timestamp, raspi_id, tempe, humid, sensor_id, current_status]])
+
+
 def get_dht_data():
     tempe = 200.0 # unnecessary value-setting
     hum = 100.0 # unnecessary value-setting
@@ -59,16 +64,25 @@ def client_test(hostname_v1 = SERVER, waiting_port_v1 = WAITING_PORT, message1 =
     port_s = waiting_port_v1
 
     try:
-        retry_count = 0
-        save_failed_data_list = []
         while True:
             dht_data = get_dht_data()
             if dht_data is None:
                 logger.warning("Failed to get DHT22 data, skipping this iteration")
-                status = "error"
+                save_local_csv(str(datetime.now()).strftime('%Y%m%d-%H%M%S'), None, None, "ERROR")
                 continue
 
             tempe, humid = dht_data
+            current_status = status
+            data_s_list = [{
+                            "timestamp": str(datetime.now()).strftime('%Y%m%d-%H%M%S'),
+                            "raspi_id": raspi_id,
+                            "sensor_id": sensor_id,
+                            "tempe_dht_1": tempe,
+                            "humid_dht_1": humid,
+                            "status": current_status
+                            }]
+            data_s_json = json.dumps(data_s_list)
+            data_s = data_s_json.encode('utf-8')
 
             # socoket for receiving and sending data
             # AF_INET     : IPv4
@@ -83,17 +97,6 @@ def client_test(hostname_v1 = SERVER, waiting_port_v1 = WAITING_PORT, message1 =
                     socket_r_s.connect((node_s, port_s))
                     logger.info("Connected to server host=%s port=%s", node_s, port_s)
 
-                    data_s_list = [{
-                                    "timestamp": str(datetime.now()).strftime('%Y%m%d-%H%M%S'), 
-                                    "raspi_id": raspi_id, 
-                                    "sensor_id": sensor_id, 
-                                    "tempe_dht_1": tempe, 
-                                    "humid_dht_1": humid, 
-                                    "status": status
-                                    }]
-
-                    data_s_json = json.dumps(data_s_list)
-                    data_s = data_s_json.encode('utf-8')
                     socket_r_s.sendall(data_s)
                     logger.info("Sent sensor data host=%s bytes=%s payload=%s", node_s, len(data_s), data_s_json)
                     break  # 正常に送信できたため、ループを抜ける
@@ -101,14 +104,14 @@ def client_test(hostname_v1 = SERVER, waiting_port_v1 = WAITING_PORT, message1 =
                     logger.exception("Failed to send sensor data host=%s port=%s", node_s, port_s)
 
                     if retry_count < MAX_SEND_RETRY:
-                        retry_count += 1
-                        logger.info("Retrying to send data host=%s port=%s retry_count=%s", node_s, port_s, retry_count)
+                        logger.info("Retrying to send data host=%s port=%s retry_count=%s", node_s, port_s, retry_count + 1)
                         time.sleep(WAIT_INTERVAL_RETRY)
                     else:
                         logger.error("Max send retry reached host=%s port=%s", node_s, port_s)
-                        load_csv()
-                        save_csv([[str(datetime.now()).strftime('%Y%m%d-%H%M%S'), raspi_id, tempe, humid, sensor_id, status]])
-                        logger.info("Failed data saved: %s", save_failed_data_list)
+                        current_status = "SEND_FAILED"
+                        data_s_list[0]["status"] = current_status
+                        save_local_csv(data_s_list[0]["timestamp"], tempe, humid, current_status)
+                        logger.info("Failed data saved locally payload=%s", json.dumps(data_s_list))
                         break  # 最大リトライ回数に達したため、ループを抜ける
 
                 finally:

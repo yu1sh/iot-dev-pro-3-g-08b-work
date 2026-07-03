@@ -11,7 +11,10 @@
 ├── client/                    # センサー接続端末用
 │   ├── logs/                  # 実行時に作成
 │   │   └── sensor_client_YYYYMMDD-HHMMSS.log
+│   ├── outputs/               # 実行時に作成
+│   │   └── failed_sensor_readings.csv
 │   └── src/
+│       ├── csv_writter.py
 │       ├── dht22_takemoto.py
 │       ├── logger_setup.py
 │       └── sensor_client.py
@@ -36,5 +39,6 @@
 - `server/src/`: サーバー側のソースコード
 - `server/src/templates/`: Webダッシュボード用のHTMLテンプレート
 - `client/logs/`: クライアント実行時に作成されるログ保存先
+- `client/outputs/`: サーバー送信に失敗したセンサーデータのCSV保存先
 - `server/logs/`: サーバー実行時に作成されるログ保存先
 - `server/outputs/`: 受信したセンサーデータのCSV保存先
