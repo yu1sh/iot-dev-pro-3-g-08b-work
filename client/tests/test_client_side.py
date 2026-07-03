@@ -101,6 +101,21 @@ class SensorClientSideTest(unittest.TestCase):
             ["20260703-143000", sensor_client.RASPI_ID, "24.5", "56.0", sensor_client.SENSOR_ID, "SEND_FAILED"],
         )
 
+    def test_save_local_csv_can_store_warning_and_error_status(self):
+        with TemporaryDirectory() as tmp_dir:
+            csv_writter.CSV_DIR = Path(tmp_dir)
+            csv_writter.CSV_FILE = Path(tmp_dir) / "failed_sensor_readings.csv"
+
+            sensor_client.save_local_csv("20260703-143000", 61.0, 56.0, "WARNING")
+            sensor_client.save_local_csv("20260703-143010", None, None, "ERROR")
+
+            with open(csv_writter.CSV_FILE, newline="") as f:
+                rows = list(csv.reader(f))
+
+        self.assertEqual(rows[1][-1], "WARNING")
+        self.assertEqual(rows[2][-1], "ERROR")
+        self.assertEqual(rows[2][2:4], ["", ""])
+
 
 if __name__ == "__main__":
     unittest.main()
