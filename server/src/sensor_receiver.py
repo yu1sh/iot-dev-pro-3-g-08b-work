@@ -1,18 +1,23 @@
 #!/usr/bin/env /usr/bin/python3
 # -*- coding: utf-8 -*-
 
+import os
 import sys
 import time
 import socket
 import threading
 import json
+from dotenv import load_dotenv
+from pathlib import Path
 from csv_writter import load_csv, save_csv
 from logger_setup import setup_logger
 
 logger = setup_logger(__name__)
 
-SERVER = "0.0.0.0"
-WAITING_PORT = 8765
+load_dotenv(Path(__file__).with_name(".env"), verbose=True)
+
+SERVER = os.environ.get('SERVER_IP')
+WAITING_PORT = int(os.environ.get('PORT_NUMBER'))
 
 LOOP_INTERVAL = 5
 
