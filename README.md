@@ -63,6 +63,16 @@ DHT22センサーの読み取りに失敗した場合、クライアントはそ
 
 サーバーへ送信できなかった場合も、クライアント側で状態を `SEND_FAILED` として同じCSVに保存します。
 
+## セットアップ
+
+このプロジェクトは `pyproject.toml` に依存ライブラリを定義しています。
+
+仮想環境を作成して有効化したあと、リポジトリのルートディレクトリで次のコマンドを実行すると、必要なライブラリをインストールできます。
+
+```bash
+pip install .
+```
+
 ## Raspberry Piでの自動起動設定
 
 `systemd/iot-sensor_client.service` は、Raspberry Pi起動時に `client/src/sensor_client.py` を自動実行するためのserviceファイルです。
