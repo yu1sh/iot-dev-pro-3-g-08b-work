@@ -86,8 +86,8 @@ def client_test(hostname_v1 = SERVER, waiting_port_v1 = WAITING_PORT, message1 =
                                     "timestamp": str(datetime.now()).strftime('%Y%m%d-%H%M%S'), 
                                     "raspi_id": raspi_id, 
                                     "sensor_id": sensor_id, 
-                                    "tempe_v": tempe, 
-                                    "humid_v": humid, 
+                                    "tempe_dht_1": tempe, 
+                                    "humid_dht_1": humid, 
                                     "status": status
                                     }]
 
