@@ -5,7 +5,7 @@
 ```text
 .
 ├── README.md
-├── requirements.txt
+├── pyproject.toml
 ├── Android/                   # Android端末用
 │   └── index.html
 ├── client/                    # センサー接続端末用
@@ -46,6 +46,22 @@
 - `server/logs/`: サーバー実行時に作成されるログ保存先
 - `server/outputs/`: 受信したセンサーデータのCSV保存先
 - `systemd/`: Raspberry Pi起動時にクライアントを自動実行するserviceファイル
+
+## プログラムの流れ
+
+このシステムは、センサーを接続したRaspberry Pi側のクライアントと、データを受信するサーバー側のプログラムで動作します。
+
+1. Raspberry Pi側で `client/src/sensor_client.py` を起動します。
+2. クライアントはDHT22センサーから温度と湿度を読み取ります。
+3. 読み取った値に、時刻・Raspberry Pi ID・センサーID・状態を付けてJSON形式のデータを作成します。
+4. 作成したデータをTCP通信でサーバー側の `server/src/sensor_receiver.py` に送信します。
+5. サーバーは受信したデータを確認し、温度や湿度の値に応じて `OK`、`WARNING`、`ERROR` の状態を判定します。
+6. 判定後のデータは `server/outputs/sensor_readings.csv` に保存されます。
+7. `server/src/web_dashboard.py` を起動すると、保存されたCSVデータをWebブラウザから確認できます。
+
+DHT22センサーの読み取りに失敗した場合、クライアントはその回の送信を行わず、温度・湿度を空欄、状態を `ERROR` として `client/outputs/failed_sensor_readings.csv` に保存します。
+
+サーバーへ送信できなかった場合も、クライアント側で状態を `SEND_FAILED` として同じCSVに保存します。
 
 ## Raspberry Piでの自動起動設定
 
