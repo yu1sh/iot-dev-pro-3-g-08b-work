@@ -53,6 +53,10 @@ def save_sensor_payload(data_r_json):
     save_csv([row])
     return row
 
+"""
+def save_json(data_r_json):
+"""
+
 def server(server_v1=SERVER, waiting_port_v1=WAITING_PORT):
 
     stop_event = threading.Event()
