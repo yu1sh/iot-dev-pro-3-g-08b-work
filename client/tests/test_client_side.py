@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import csv
+import importlib.util
 import json
 import sys
 import types
@@ -12,6 +13,8 @@ from unittest import mock
 
 
 CLIENT_SRC = Path(__file__).resolve().parents[1] / "src"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+SERVER_SRC = REPO_ROOT / "server" / "src"
 sys.path.insert(0, str(CLIENT_SRC))
 
 
@@ -39,6 +42,54 @@ sys.modules["dht22_takemoto"] = fake_dht22_module
 
 import csv_writter
 import sensor_client
+
+
+def load_module(module_name, file_path):
+    spec = importlib.util.spec_from_file_location(module_name, file_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def load_server_modules():
+    original_csv_writter = sys.modules.get("csv_writter")
+    original_logger_setup = sys.modules.get("logger_setup")
+    server_csv = load_module("server_csv_writter_for_test", SERVER_SRC / "csv_writter.py")
+    server_logger = load_module("server_logger_setup_for_test", SERVER_SRC / "logger_setup.py")
+
+    sys.modules["csv_writter"] = server_csv
+    sys.modules["logger_setup"] = server_logger
+    try:
+        server_receiver = load_module("server_sensor_receiver_for_test", SERVER_SRC / "sensor_receiver.py")
+    finally:
+        if original_csv_writter is None:
+            sys.modules.pop("csv_writter", None)
+        else:
+            sys.modules["csv_writter"] = original_csv_writter
+
+        if original_logger_setup is None:
+            sys.modules.pop("logger_setup", None)
+        else:
+            sys.modules["logger_setup"] = original_logger_setup
+
+    return server_csv, server_receiver
+
+
+class FailingSocket:
+    connect_count = 0
+
+    def setsockopt(self, *args):
+        pass
+
+    def settimeout(self, *args):
+        pass
+
+    def connect(self, *args):
+        type(self).connect_count += 1
+        raise OSError("connection failed for test")
+
+    def close(self):
+        pass
 
 
 class SensorClientSideTest(unittest.TestCase):
@@ -115,6 +166,90 @@ class SensorClientSideTest(unittest.TestCase):
         self.assertEqual(rows[1][-1], "WARNING")
         self.assertEqual(rows[2][-1], "ERROR")
         self.assertEqual(rows[2][2:4], ["", ""])
+
+    def test_send_failure_retries_and_saves_send_failed_status(self):
+        with TemporaryDirectory() as tmp_dir:
+            csv_writter.CSV_DIR = Path(tmp_dir)
+            csv_writter.CSV_FILE = Path(tmp_dir) / "failed_sensor_readings.csv"
+            FailingSocket.connect_count = 0
+            payload = sensor_client.build_sensor_payload(
+                "20260703-143000",
+                24.5,
+                56.0,
+                "OK",
+            )
+
+            with mock.patch("socket.socket", return_value=FailingSocket()):
+                with mock.patch.object(sensor_client.time, "sleep"):
+                    result = sensor_client.send_sensor_payload("127.0.0.1", 8765, payload)
+
+            with open(csv_writter.CSV_FILE, newline="") as f:
+                rows = list(csv.reader(f))
+
+        self.assertFalse(result)
+        self.assertEqual(FailingSocket.connect_count, sensor_client.MAX_SEND_RETRY + 1)
+        self.assertEqual(rows[1][-1], "SEND_FAILED")
+        self.assertEqual(payload[0]["status"], "SEND_FAILED")
+
+
+class SensorReceiverServerSideTest(unittest.TestCase):
+    def setUp(self):
+        self.server_csv, self.sensor_receiver = load_server_modules()
+
+    def test_status_check_returns_ok_warning_and_error(self):
+        self.assertEqual(self.sensor_receiver.status_check(24.5, 56.0, "OK"), "OK")
+        self.assertEqual(self.sensor_receiver.status_check(61.0, 56.0, "OK"), "WARNING")
+        self.assertEqual(self.sensor_receiver.status_check(24.5, 101.0, "OK"), "ERROR")
+        self.assertEqual(self.sensor_receiver.status_check(None, 56.0, "OK"), "ERROR")
+
+    def test_server_parses_client_payload_into_csv_row(self):
+        payload = sensor_client.build_sensor_payload(
+            "20260703-143000",
+            24.5,
+            56.0,
+            "OK",
+        )
+
+        row = self.sensor_receiver.parse_sensor_payload(json.dumps(payload))
+
+        self.assertEqual(
+            row,
+            ["20260703-143000", sensor_client.RASPI_ID, 24.5, 56.0, sensor_client.SENSOR_ID, "OK"],
+        )
+
+    def test_server_csv_creates_header_and_saves_received_payload(self):
+        payload = sensor_client.build_sensor_payload(
+            "20260703-143000",
+            61.0,
+            56.0,
+            "OK",
+        )
+
+        with TemporaryDirectory() as tmp_dir:
+            self.server_csv.CSV_DIR = Path(tmp_dir)
+            self.server_csv.CSV_FILE = Path(tmp_dir) / "sensor_readings.csv"
+
+            saved_row = self.sensor_receiver.save_sensor_payload(json.dumps(payload))
+
+            with open(self.server_csv.CSV_FILE, newline="") as f:
+                rows = list(csv.reader(f))
+
+        self.assertEqual(
+            rows[0],
+            ["timestamp", "raspi_id", "dht_temp", "dht_humid", "sensor_id", "status"],
+        )
+        self.assertEqual(saved_row[-1], "WARNING")
+        self.assertEqual(rows[1][-1], "WARNING")
+
+    def test_invalid_json_is_rejected(self):
+        with self.assertRaises(json.JSONDecodeError):
+            self.sensor_receiver.parse_sensor_payload("not-json")
+
+    def test_missing_required_payload_key_is_rejected(self):
+        payload = [{"timestamp": "20260703-143000"}]
+
+        with self.assertRaises(KeyError):
+            self.sensor_receiver.parse_sensor_payload(json.dumps(payload))
 
 
 if __name__ == "__main__":
