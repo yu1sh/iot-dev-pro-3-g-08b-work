@@ -87,7 +87,7 @@ pip install .
 `client/src/.env` は `client/src/.env.example` を参考に作成します。
 
 ```env
-SERVER_IP = "10.192.139.5"
+SERVER_IP = "10.192.000.0"
 PORT_NUMBER = 8765
 ```
 
