@@ -42,6 +42,46 @@ def build_sensor_payload(timestamp, tempe, humid, current_status=STATUS):
             }]
 
 
+def send_sensor_payload(node_s, port_s, data_s_list):
+    import socket
+
+    data_s_json = json.dumps(data_s_list)
+    data_s = data_s_json.encode('utf-8')
+    tempe = data_s_list[0]["tempe_dht_1"]
+    humid = data_s_list[0]["humid_dht_1"]
+
+    for retry_count in range(MAX_SEND_RETRY+1):
+        socket_r_s = None
+        try:
+            socket_r_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            socket_r_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            socket_r_s.settimeout(SOCKET_TIMEOUT)
+            logger.info("Connecting to server host=%s port=%s", node_s, port_s)
+            socket_r_s.connect((node_s, port_s))
+            logger.info("Connected to server host=%s port=%s", node_s, port_s)
+
+            socket_r_s.sendall(data_s)
+            logger.info("Sent sensor data host=%s bytes=%s payload=%s", node_s, len(data_s), data_s_json)
+            return True
+        except (socket.timeout, ConnectionError, OSError):
+            logger.exception("Failed to send sensor data host=%s port=%s", node_s, port_s)
+
+            if retry_count < MAX_SEND_RETRY:
+                logger.info("Retrying to send data host=%s port=%s retry_count=%s", node_s, port_s, retry_count + 1)
+                time.sleep(WAIT_INTERVAL_RETRY)
+            else:
+                logger.error("Max send retry reached host=%s port=%s", node_s, port_s)
+                data_s_list[0]["status"] = "SEND_FAILED"
+                save_local_csv(data_s_list[0]["timestamp"], tempe, humid, "SEND_FAILED")
+                logger.info("Failed data saved locally payload=%s", json.dumps(data_s_list))
+                return False
+
+        finally:
+            if socket_r_s is not None:
+                socket_r_s.close()
+                logger.info("Closed client socket host=%s port=%s", node_s, port_s)
+
+
 def get_dht_data():
     tempe = 200.0 # unnecessary value-setting
     hum = 100.0 # unnecessary value-setting
@@ -69,7 +109,6 @@ def get_dht_data():
 
 
 def client_test(hostname_v1 = SERVER, waiting_port_v1 = WAITING_PORT, message1 = MESSAGE_FROM_CLIENT):
-    import socket
     import time
 
     node_s = hostname_v1
@@ -91,43 +130,7 @@ def client_test(hostname_v1 = SERVER, waiting_port_v1 = WAITING_PORT, message1 =
                 humid,
                 current_status,
             )
-            data_s_json = json.dumps(data_s_list)
-            data_s = data_s_json.encode('utf-8')
-
-            # socoket for receiving and sending data
-            # AF_INET     : IPv4
-            # SOCK_STREAM : TCP
-            for retry_count in range(MAX_SEND_RETRY+1):
-                socket_r_s = None
-                try:
-                    socket_r_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    socket_r_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                    socket_r_s.settimeout(SOCKET_TIMEOUT)
-                    logger.info("Connecting to server host=%s port=%s", node_s, port_s)
-                    socket_r_s.connect((node_s, port_s))
-                    logger.info("Connected to server host=%s port=%s", node_s, port_s)
-
-                    socket_r_s.sendall(data_s)
-                    logger.info("Sent sensor data host=%s bytes=%s payload=%s", node_s, len(data_s), data_s_json)
-                    break  # 正常に送信できたため、ループを抜ける
-                except (socket.timeout, ConnectionError, OSError):
-                    logger.exception("Failed to send sensor data host=%s port=%s", node_s, port_s)
-
-                    if retry_count < MAX_SEND_RETRY:
-                        logger.info("Retrying to send data host=%s port=%s retry_count=%s", node_s, port_s, retry_count + 1)
-                        time.sleep(WAIT_INTERVAL_RETRY)
-                    else:
-                        logger.error("Max send retry reached host=%s port=%s", node_s, port_s)
-                        current_status = "SEND_FAILED"
-                        data_s_list[0]["status"] = current_status
-                        save_local_csv(data_s_list[0]["timestamp"], tempe, humid, current_status)
-                        logger.info("Failed data saved locally payload=%s", json.dumps(data_s_list))
-                        break  # 最大リトライ回数に達したため、ループを抜ける
-
-                finally:
-                    if socket_r_s is not None:
-                        socket_r_s.close()
-                        logger.info("Closed client socket host=%s port=%s", node_s, port_s)
+            send_sensor_payload(node_s, port_s, data_s_list)
 
             time.sleep(WAIT_INTERVAL)
 
