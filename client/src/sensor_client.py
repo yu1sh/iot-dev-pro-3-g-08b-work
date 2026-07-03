@@ -11,10 +11,9 @@ from csv_writter import load_csv, save_csv
 
 logger = setup_logger(__name__)
 
-dht22_instance = dht22.DHT22(gpio=26)
-raspi_id = "raspi_001"
-sensor_id = "dht_1"
-status = "OK"
+RASPI_ID = "raspi_001"
+SENSOR_ID = "dht_1"
+STATUS = "OK"
 
 SERVER = 'localhost'
 WAITING_PORT = 8765
@@ -25,9 +24,11 @@ WAIT_INTERVAL = 10
 WAIT_INTERVAL_RETRY = 5
 SOCKET_TIMEOUT = 10
 
+dht22_instance = dht22.DHT22(gpio=26)
+
 def save_local_csv(timestamp, tempe, humid, current_status):
     load_csv()
-    save_csv([[timestamp, raspi_id, tempe, humid, sensor_id, current_status]])
+    save_csv([[timestamp, RASPI_ID, tempe, humid, SENSOR_ID, current_status]])
 
 
 def get_dht_data():
@@ -72,11 +73,11 @@ def client_test(hostname_v1 = SERVER, waiting_port_v1 = WAITING_PORT, message1 =
                 continue
 
             tempe, humid = dht_data
-            current_status = status
+            current_status = STATUS
             data_s_list = [{
                             "timestamp": datetime.now().strftime('%Y%m%d-%H%M%S'),
-                            "raspi_id": raspi_id,
-                            "sensor_id": sensor_id,
+                            "raspi_id": RASPI_ID,
+                            "sensor_id": SENSOR_ID,
                             "tempe_dht_1": tempe,
                             "humid_dht_1": humid,
                             "status": current_status
