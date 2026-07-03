@@ -31,6 +31,17 @@ def save_local_csv(timestamp, tempe, humid, current_status):
     save_csv([[timestamp, RASPI_ID, tempe, humid, SENSOR_ID, current_status]])
 
 
+def build_sensor_payload(timestamp, tempe, humid, current_status=STATUS):
+    return [{
+            "timestamp": timestamp,
+            "raspi_id": RASPI_ID,
+            "sensor_id": SENSOR_ID,
+            "tempe_dht_1": tempe,
+            "humid_dht_1": humid,
+            "status": current_status
+            }]
+
+
 def get_dht_data():
     tempe = 200.0 # unnecessary value-setting
     hum = 100.0 # unnecessary value-setting
@@ -74,14 +85,12 @@ def client_test(hostname_v1 = SERVER, waiting_port_v1 = WAITING_PORT, message1 =
 
             tempe, humid = dht_data
             current_status = STATUS
-            data_s_list = [{
-                            "timestamp": datetime.now().strftime('%Y%m%d-%H%M%S'),
-                            "raspi_id": RASPI_ID,
-                            "sensor_id": SENSOR_ID,
-                            "tempe_dht_1": tempe,
-                            "humid_dht_1": humid,
-                            "status": current_status
-                            }]
+            data_s_list = build_sensor_payload(
+                datetime.now().strftime('%Y%m%d-%H%M%S'),
+                tempe,
+                humid,
+                current_status,
+            )
             data_s_json = json.dumps(data_s_list)
             data_s = data_s_json.encode('utf-8')
 
