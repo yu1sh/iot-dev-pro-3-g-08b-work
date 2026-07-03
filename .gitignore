@@ -7,3 +7,5 @@ logs/
 
 outputs/
 *.csv
+
+*.env
