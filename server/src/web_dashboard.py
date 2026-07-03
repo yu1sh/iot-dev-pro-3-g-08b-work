@@ -1,24 +1,25 @@
 #!/usr/bin/env /usr/bin/python3
 # -*- coding: utf-8 -*-
 
-import os
 import csv
 from datetime import datetime
 from pathlib import Path
-from dotenv import load_dotenv
 
 from flask import Flask, render_template, send_file
+from env_loader import load_required_env, parse_int_env
 from logger_setup import setup_logger
 
 app = Flask(__name__)
 logger = setup_logger(__name__)
 
-load_dotenv(Path(__file__).with_name(".env"), verbose=True)
+ENV_FILE = Path(__file__).with_name(".env")
+ENV = load_required_env(ENV_FILE, ["F_HOST", "F_PORT"], logger)
+
+F_HOST = ENV["F_HOST"]
+F_PORT = parse_int_env(ENV["F_PORT"], "F_PORT", logger)
 
 CSV_DIR = Path(__file__).parent.parent / "outputs"
 CSV_FILE = CSV_DIR / "sensor_readings.csv"
-F_HOST = os.environ.get('F_HOST')
-F_PORT = int(os.environ.get('F_PORT'))
 
 @app.route("/", methods=["GET"])
 def index():

@@ -2,27 +2,27 @@
 # -*- coding: utf-8 -*-
 
 
-import os
 import sys
 import json
 import dht22_takemoto as dht22
 import time
 from pathlib import Path
-from dotenv import load_dotenv
 from datetime import datetime
+from env_loader import load_required_env, parse_int_env
 from logger_setup import setup_logger
 from csv_writter import load_csv, save_csv
 
 logger = setup_logger(__name__)
 
-load_dotenv(Path(__file__).with_name(".env"), verbose=True)
+ENV_FILE = Path(__file__).with_name(".env")
+ENV = load_required_env(ENV_FILE, ["SERVER_IP", "PORT_NUMBER"], logger)
 
 RASPI_ID = "raspi_001"
 SENSOR_ID = "dht_1"
 STATUS = "OK"
 
-SERVER = os.environ.get('SERVER_IP')
-WAITING_PORT = int(os.environ.get('PORT_NUMBER'))
+SERVER = ENV["SERVER_IP"]
+WAITING_PORT = parse_int_env(ENV["PORT_NUMBER"], "PORT_NUMBER", logger)
 MESSAGE_FROM_CLIENT = "This is a client test message."
 
 MAX_SEND_RETRY = 3
