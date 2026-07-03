@@ -17,6 +17,7 @@
 │       ├── .env.example
 │       ├── csv_writter.py
 │       ├── dht22_takemoto.py
+│       ├── env_loader.py
 │       ├── logger_setup.py
 │       └── sensor_client.py
 ├── server/                    # サーバー端末用
@@ -26,6 +27,7 @@
 │   │   └── sensor_readings.csv
 │   └── src/
 │       ├── csv_writter.py
+│       ├── env_loader.py
 │       ├── logger_setup.py
 │       ├── sensor_receiver.py
 │       ├── web_dashboard.py
@@ -40,6 +42,7 @@
 - `Android/`: Android端末で表示するHTMLファイル
 - `client/src/`: クライアント側のソースコード
 - `server/src/`: サーバー側のソースコード
+- `client/src/env_loader.py`, `server/src/env_loader.py`: `.env` の読み込みと必須設定の確認を行う共通処理
 - `server/src/templates/`: Webダッシュボード用のHTMLテンプレート
 - `client/logs/`: クライアント実行時に作成されるログ保存先
 - `client/outputs/`: サーバー送信に失敗したセンサーデータのCSV保存先
@@ -85,6 +88,8 @@ cp server/src/.env.example server/src/.env
 `client/src/.env` の `SERVER_IP` には、データを受信するサーバー端末のIPアドレスを設定します。
 
 `server/src/.env` の `SERVER_IP` はセンサー受信用サーバーの待ち受けアドレス、`PORT_NUMBER` は待ち受けポートです。通常は `.env.example` のように `SERVER_IP = "0.0.0.0"` のままで使用できます。
+
+各プログラムは起動時に `.env` の有無と必須項目を確認します。`.env` が存在しない場合、必要な項目が不足している場合、ポート番号が整数でない場合は、ログを出力して終了します。
 
 ### センサー受信サーバーを起動する
 
