@@ -174,4 +174,4 @@ sudo systemctl daemon-reload
 sudo systemctl restart iot-sensor_client.service
 ```
 
-PC側では、Raspberry Piからの送信を受けるために `server/src/sensor_receiver.py` を起動しておきます。
+PC側では、Raspberry Piからの送信を受けるために `sensor-receiver` を起動しておきます。
