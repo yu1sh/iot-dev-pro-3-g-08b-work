@@ -4,25 +4,24 @@
 
 import sys
 import json
-import dht22_takemoto as dht22
 import time
 from pathlib import Path
 from datetime import datetime
-from env_loader import load_required_env, parse_int_env
-from logger_setup import setup_logger
-from csv_writter import load_csv, save_csv
+try:
+    from .env_loader import load_required_env, parse_int_env
+    from .logger_setup import setup_logger
+    from .csv_writter import load_csv, save_csv
+except ImportError:
+    from env_loader import load_required_env, parse_int_env
+    from logger_setup import setup_logger
+    from csv_writter import load_csv, save_csv
 
 logger = setup_logger(__name__)
-
-ENV_FILE = Path(__file__).with_name(".env")
-ENV = load_required_env(ENV_FILE, ["SERVER_IP", "PORT_NUMBER"], logger)
+dht22 = None
 
 RASPI_ID = "raspi_001"
 SENSOR_ID = "dht_1"
 STATUS = "OK"
-
-SERVER = ENV["SERVER_IP"]
-WAITING_PORT = parse_int_env(ENV["PORT_NUMBER"], "PORT_NUMBER", logger)
 MESSAGE_FROM_CLIENT = "This is a client test message."
 
 MAX_SEND_RETRY = 3
@@ -30,7 +29,33 @@ WAIT_INTERVAL = 10
 WAIT_INTERVAL_RETRY = 5
 SOCKET_TIMEOUT = 10
 
-dht22_instance = dht22.DHT22(gpio=26)
+dht22_instance = None
+
+
+def load_dht22_module():
+    global dht22
+    if dht22 is None:
+        try:
+            from . import dht22_takemoto as dht22_module
+        except ImportError:
+            import dht22_takemoto as dht22_module
+        dht22 = dht22_module
+    return dht22
+
+
+def load_config():
+    env_file = Path(__file__).with_name(".env")
+    if not env_file.exists():
+        env_file = Path.cwd() / "client" / "src" / ".env"
+    env = load_required_env(env_file, ["SERVER_IP", "PORT_NUMBER"], logger)
+    return env["SERVER_IP"], parse_int_env(env["PORT_NUMBER"], "PORT_NUMBER", logger)
+
+
+def initialize_dht22(gpio=26):
+    global dht22_instance
+    dht22_module = load_dht22_module()
+    dht22_instance = dht22_module.DHT22(gpio=gpio)
+    return dht22_instance
 
 def save_local_csv(timestamp, tempe, humid, current_status):
     load_csv()
@@ -91,17 +116,20 @@ def send_sensor_payload(node_s, port_s, data_s_list):
 def get_dht_data():
     tempe = 200.0 # unnecessary value-setting
     hum = 100.0 # unnecessary value-setting
+    dht22_module = load_dht22_module()
 
     try:
+        if dht22_instance is None:
+            initialize_dht22()
         tempe, hum, check = dht22_instance.read()
         logger.info("DHT22 read success temperature=%.1f humidity=%.1f", tempe, hum)
 
-    except dht22.DHT22CRCError:
+    except dht22_module.DHT22CRCError:
         logger.warning("DHT22CRCError while reading sensor")
         time.sleep(WAIT_INTERVAL_RETRY)
         return None
 
-    except dht22.DHT22MissingDataError:
+    except dht22_module.DHT22MissingDataError:
         logger.warning("DHT22MissingDataError while reading sensor")
         time.sleep(WAIT_INTERVAL_RETRY)
         return None
@@ -114,7 +142,7 @@ def get_dht_data():
     return float(tempe), float(hum)
 
 
-def client_test(hostname_v1 = SERVER, waiting_port_v1 = WAITING_PORT, message1 = MESSAGE_FROM_CLIENT):
+def client_test(hostname_v1, waiting_port_v1, message1 = MESSAGE_FROM_CLIENT):
     import time
 
     node_s = hostname_v1
@@ -147,13 +175,16 @@ def client_test(hostname_v1 = SERVER, waiting_port_v1 = WAITING_PORT, message1 =
         logger.exception("Unexpected client error")
 
 
-if __name__ == '__main__':
+def main():
     logger.info("Start sensor_client.py")
+
+    server, waiting_port = load_config()
+    initialize_dht22()
 
     sys_argc = len(sys.argv)
     count = 1
-    hostname_v = SERVER
-    waiting_port_v = WAITING_PORT
+    hostname_v = server
+    waiting_port_v = waiting_port
     message_v = MESSAGE_FROM_CLIENT
 
     while True:
@@ -181,3 +212,7 @@ if __name__ == '__main__':
     )
 
     client_test(hostname_v, waiting_port_v, message_v)
+
+
+if __name__ == '__main__':
+    main()

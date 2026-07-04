@@ -76,6 +76,8 @@ DHT22センサーの読み取りに失敗した場合、クライアントはそ
 pip install .
 ```
 
+インストール後は、`sensor-receiver`、`sensor-dashboard`、`sensor-client` の3つのコマンドを使用できます。
+
 ## 実行方法
 
 実行前に、設定ファイルを作成します。
@@ -96,7 +98,7 @@ cp server/src/.env.example server/src/.env
 サーバー端末で、Raspberry Piから送信されるセンサーデータを受信するプログラムを起動します。
 
 ```bash
-python server/src/sensor_receiver.py
+sensor-receiver
 ```
 
 受信したデータは `server/outputs/sensor_readings.csv` に保存されます。
@@ -106,7 +108,7 @@ python server/src/sensor_receiver.py
 サーバー端末で、CSVに保存されたデータをWebブラウザから確認するためのダッシュボードを起動します。
 
 ```bash
-python server/src/web_dashboard.py
+sensor-dashboard
 ```
 
 `server/src/.env` の設定が `.env.example` のままの場合、ブラウザで次のURLにアクセスします。
@@ -126,7 +128,7 @@ http://127.0.0.1:5001/
 DHT22センサーを接続したRaspberry Pi側で、センサー値を読み取ってサーバーへ送信するプログラムを起動します。
 
 ```bash
-python client/src/sensor_client.py
+sensor-client
 ```
 
 送信に失敗したデータや、DHT22センサーの読み取りに失敗したデータは `client/outputs/failed_sensor_readings.csv` に保存されます。

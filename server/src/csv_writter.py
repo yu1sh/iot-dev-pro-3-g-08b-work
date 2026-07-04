@@ -3,8 +3,11 @@
 
 import csv
 from pathlib import Path
-from logger_setup import setup_logger
 import threading
+try:
+    from .logger_setup import setup_logger
+except ImportError:
+    from logger_setup import setup_logger
 
 logger = setup_logger(__name__)
 

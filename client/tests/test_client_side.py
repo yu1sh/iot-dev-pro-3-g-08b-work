@@ -40,8 +40,13 @@ fake_dht22_module.DHT22CRCError = FakeDHT22CRCError
 fake_dht22_module.DHT22MissingDataError = FakeDHT22MissingDataError
 sys.modules["dht22_takemoto"] = fake_dht22_module
 
+fake_dotenv_module = types.ModuleType("dotenv")
+fake_dotenv_module.load_dotenv = lambda *args, **kwargs: True
+sys.modules["dotenv"] = fake_dotenv_module
+
 import csv_writter
 import sensor_client
+sensor_client.dht22 = fake_dht22_module
 
 
 def load_module(module_name, file_path):

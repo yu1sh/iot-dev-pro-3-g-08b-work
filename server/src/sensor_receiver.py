@@ -7,19 +7,26 @@ import socket
 import threading
 import json
 from pathlib import Path
-from env_loader import load_required_env, parse_int_env
-from csv_writter import load_csv, save_csv
-from logger_setup import setup_logger
+try:
+    from .env_loader import load_required_env, parse_int_env
+    from .csv_writter import load_csv, save_csv
+    from .logger_setup import setup_logger
+except ImportError:
+    from env_loader import load_required_env, parse_int_env
+    from csv_writter import load_csv, save_csv
+    from logger_setup import setup_logger
 
 logger = setup_logger(__name__)
 
-ENV_FILE = Path(__file__).with_name(".env")
-ENV = load_required_env(ENV_FILE, ["SERVER_IP", "PORT_NUMBER"], logger)
-
-SERVER = ENV["SERVER_IP"]
-WAITING_PORT = parse_int_env(ENV["PORT_NUMBER"], "PORT_NUMBER", logger)
-
 LOOP_INTERVAL = 5
+
+
+def load_config():
+    env_file = Path(__file__).with_name(".env")
+    if not env_file.exists():
+        env_file = Path.cwd() / "server" / "src" / ".env"
+    env = load_required_env(env_file, ["SERVER_IP", "PORT_NUMBER"], logger)
+    return env["SERVER_IP"], parse_int_env(env["PORT_NUMBER"], "PORT_NUMBER", logger)
 
 def status_check(dht_temp, dht_humid, status):
     if dht_temp is None or dht_humid is None or not status:
@@ -62,7 +69,7 @@ def save_sensor_payload(data_r_json):
 def save_json(data_r_json):
 """
 
-def server(server_v1=SERVER, waiting_port_v1=WAITING_PORT):
+def server(server_v1, waiting_port_v1):
 
     stop_event = threading.Event()
 
@@ -143,12 +150,13 @@ def server(server_v1=SERVER, waiting_port_v1=WAITING_PORT):
 
 
 
-if __name__ == '__main__':
+def main():
+    server_host, server_port = load_config()
 
     sys_argc = len(sys.argv)
     count = 1
-    hostname_v = SERVER
-    waiting_port_v = WAITING_PORT
+    hostname_v = server_host
+    waiting_port_v = server_port
 
     while True:
             if(count >= sys_argc):
@@ -168,3 +176,7 @@ if __name__ == '__main__':
     logger.info("Start sensor_receiver.py host=%s port=%s", hostname_v, waiting_port_v)
 
     server(hostname_v, waiting_port_v)
+
+
+if __name__ == '__main__':
+    main()

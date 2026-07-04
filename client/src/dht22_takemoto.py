@@ -46,7 +46,10 @@
 
 import time
 import lgpio
-from logger_setup import setup_logger
+try:
+    from .logger_setup import setup_logger
+except ImportError:
+    from logger_setup import setup_logger
 
 logger = setup_logger(__name__)
 
