@@ -91,7 +91,7 @@ class DHT22:
         # if bit count mismatch, return error (4 byte data + 1 byte checksum)
         if len(pull_up_lengths) != 40:
             logger.warning("DHT22 missing data gpio=%s bit_count=%s", self.__gpio, len(pull_up_lengths))
-            raise DHT22MissingDataError # TODO
+            raise DHT22MissingDataError
 
         # calculate bits from lengths of the pull up periods
         bits = self.__calculate_bits(pull_up_lengths)
@@ -109,7 +109,7 @@ class DHT22:
                 the_bytes[4],
                 the_bytes,
             )
-            raise DHT22CRCError # TODO
+            raise DHT22CRCError
 
         # ok, we have valid data
 
