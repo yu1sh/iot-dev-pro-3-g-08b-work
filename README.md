@@ -78,6 +78,58 @@ pip install .
 
 インストール後は、`sensor-receiver`、`sensor-dashboard`、`sensor-client` の3つのコマンドを使用できます。
 
+## 開発者向けメモ
+
+### `pyproject.toml` について
+
+`pyproject.toml` は、このプロジェクトのパッケージ設定ファイルです。
+
+主に次の内容を定義しています。
+
+- 使用するPythonのバージョン
+- `Flask` や `python-dotenv` などの依存ライブラリ
+- `pip install .` でインストールしたときに使えるコマンド
+
+このプロジェクトでは、次の3つのコマンドを `pyproject.toml` で定義しています。
+
+```toml
+[project.scripts]
+sensor-client = "client.src.sensor_client:main"
+sensor-receiver = "server.src.sensor_receiver:main"
+sensor-dashboard = "server.src.web_dashboard:main"
+```
+
+例えば `sensor-client` を実行すると、`client/src/sensor_client.py` の `main()` 関数が呼び出されます。
+
+### `__init__.py` について
+
+`__init__.py` は、そのディレクトリをPythonのパッケージとして扱うためのファイルです。
+
+このプロジェクトでは、`client/` や `server/` 配下のコードを `pyproject.toml` のコマンドから呼び出せるようにするために置いています。
+
+中身が空でも意味があります。削除すると、`sensor-client`、`sensor-receiver`、`sensor-dashboard` から各プログラムを正しく読み込めなくなる可能性があります。
+
+### テストコードについて
+
+テストコードは、プログラムの一部だけを自動で実行し、期待通りに動くか確認するためのコードです。
+
+現在は主に次の内容を確認しています。
+
+- クライアント側のDHT22読み取り処理
+- クライアント側の送信失敗時のCSV保存
+- サーバー側の `OK`、`WARNING`、`ERROR` 判定
+- サーバー側のJSON解析とCSV保存
+- `.env` の読み込みと必須項目チェック
+- Webダッシュボードの表示とCSVダウンロード
+
+テストはリポジトリのルートディレクトリで次のように実行します。
+
+```bash
+python -m unittest client.tests.test_env_loader client.tests.test_client_side server.tests.test_server_side
+```
+
+実機のDHT22センサーや実際のTCP通信を使わずに確認できるよう、テスト内では一部の処理をテスト用の仮実装に置き換えています。
+
 ## 実行方法
 
 実行前に、設定ファイルを作成します。
