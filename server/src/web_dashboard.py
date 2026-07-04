@@ -31,7 +31,9 @@ def load_config():
 def index():
     logger.info("Dashboard request received")
 
-    with open(CSV_FILE, newline="") as f:       # TODO: CSVファイルが存在しない場合のエラーハンドリングを追加する
+    # TODO: CSVファイルが存在しない場合でもエラーやダッシュボードが落ちないようにする
+    # TODO: CSV読み込み時に壊れた行や空行を無視できるようにする
+    with open(CSV_FILE, newline="") as f:
         csv_data = list(csv.reader(f))
     return render_template("dashboard.html", input_from_python = csv_data)
 
