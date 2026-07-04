@@ -87,7 +87,7 @@ cp client/src/.env.example client/src/.env
 cp server/src/.env.example server/src/.env
 ```
 
-`client/src/.env` の `SERVER_IP` には、データを受信するサーバー端末のIPアドレスを設定します。
+`client/src/.env` の `SERVER_IP` には、データを受信するサーバー端末のIPアドレスを設定します。`RPI_ID` にはRaspberry Piの識別番号、`SENSOR_ID` にはセンサーの識別番号を設定します。
 
 `server/src/.env` の `SERVER_IP` はセンサー受信用サーバーの待ち受けアドレス、`PORT_NUMBER` は待ち受けポートです。通常は `.env.example` のように `SERVER_IP = "0.0.0.0"` のままで使用できます。
 
@@ -149,6 +149,8 @@ sensor-client
 ```env
 SERVER_IP = "10.192.000.0"
 PORT_NUMBER = 8765
+RPI_ID = "raspi_000"
+SENSOR_ID = "dht_0"
 ```
 
 serviceを登録して起動する手順:
