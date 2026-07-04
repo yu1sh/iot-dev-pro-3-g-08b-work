@@ -47,8 +47,17 @@ def load_config():
     env_file = Path(__file__).with_name(".env")
     if not env_file.exists():
         env_file = Path.cwd() / "client" / "src" / ".env"
-    env = load_required_env(env_file, ["SERVER_IP", "PORT_NUMBER"], logger)
-    return env["SERVER_IP"], parse_int_env(env["PORT_NUMBER"], "PORT_NUMBER", logger)
+    env = load_required_env(
+        env_file,
+        ["SERVER_IP", "PORT_NUMBER", "RPI_ID", "SENSOR_ID"],
+        logger,
+    )
+    return {
+        "server": env["SERVER_IP"],
+        "waiting_port": parse_int_env(env["PORT_NUMBER"], "PORT_NUMBER", logger),
+        "raspi_id": env["RPI_ID"],
+        "sensor_id": env["SENSOR_ID"],
+    }
 
 
 def initialize_dht22(gpio=26):
@@ -176,15 +185,19 @@ def client_test(hostname_v1, waiting_port_v1, message1 = MESSAGE_FROM_CLIENT):
 
 
 def main():
+    global RASPI_ID, SENSOR_ID
+
     logger.info("Start sensor_client.py")
 
-    server, waiting_port = load_config()
+    config = load_config()
+    RASPI_ID = config["raspi_id"]
+    SENSOR_ID = config["sensor_id"]
     initialize_dht22()
 
     sys_argc = len(sys.argv)
     count = 1
-    hostname_v = server
-    waiting_port_v = waiting_port
+    hostname_v = config["server"]
+    waiting_port_v = config["waiting_port"]
     message_v = MESSAGE_FROM_CLIENT
 
     while True:
