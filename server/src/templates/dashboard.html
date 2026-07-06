@@ -4,26 +4,36 @@
   <head>
     <meta charset="utf-8" />
     <title>Flask Example 16 (IoTデバイスプログラミング3)</title>
+    <script src="./static/main.js" defer></script>
   </head>
 
   <body>
     <h1>温湿度情報</h1>
+    <p>更新日：<time>{{ modified_date }}</time></p>
     <table border="1">
       <tr>
-        <td>温度(℃)</td>
-        <td>湿度(パーセント)</td>
+        <th>日時</th>
+        <th>端末</th>
+        <th>温度(℃)</th>
+        <th>湿度(パーセント)</th>
+        <th>センサ</th>
+        <th>ステータス</th>
       </tr>
       {% for value in input_from_python[1:] %}
       <tr>
         <td>{{ value[0] }}</td>
         <td>{{ value[1] }}</td>
+        <td>{{ value[2] }}</td>
+        <td>{{ value[3] }}</td>
+        <td>{{ value[4] }}</td>
+        <td>{{ value[5] }}</td>
       </tr>
       {% endfor %}
     </table>
 
     <a href="/files">
+      <br />
       <button type="button">CSVファイルを保存</button>
     </a>
   </body>
-
 </html>

@@ -35,7 +35,8 @@ def index():
     # TODO: CSV読み込み時に壊れた行や空行を無視できるようにする
     with open(CSV_FILE, newline="") as f:
         csv_data = list(csv.reader(f))
-    return render_template("dashboard.html", input_from_python = csv_data)
+        last_timestamp = csv_data[-1][0]
+    return render_template("dashboard.html", input_from_python = csv_data, modified_date = last_timestamp)
 
 
 @app.route('/files')
