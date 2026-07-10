@@ -7,9 +7,11 @@ from pathlib import Path
 
 from flask import Flask, render_template, send_file
 try:
+    from .csv_loader import check_csv
     from .env_loader import load_required_env, parse_int_env
     from .logger_setup import setup_logger
 except ImportError:
+    from csv_loader import check_csv
     from env_loader import load_required_env, parse_int_env
     from logger_setup import setup_logger
 
@@ -31,9 +33,8 @@ def load_config():
 def index():
     logger.info("Dashboard request received")
 
-    # TODO: CSVファイルが存在しない場合でもエラーやダッシュボードが落ちないようにする
-    # TODO: CSV読み込み時に壊れた行や空行を無視できるようにする
-    with open(CSV_FILE, newline="") as f:
+    check_csv(CSV_FILE, logger)
+    with open(CSV_FILE, newline="", encoding="utf-8") as f:
         csv_data = list(csv.reader(f))
         last_timestamp = csv_data[-1][0]
     return render_template("dashboard.html", input_from_python = csv_data, modified_date = last_timestamp)
