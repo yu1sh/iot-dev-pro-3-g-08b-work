@@ -134,6 +134,14 @@ pip install ".[dev]"
 python -m pytest
 ```
 
+### 自動テスト（GitHub Actions）
+
+コントリビューターが `main` または `master` ブランチへ変更をpushすると、GitHub Actionsが自動で単体テストを実行します。これらのブランチ宛てにPull Requestを作成・更新した場合も、同じテストが実行されます。
+
+CIでは、毎回クリーンなUbuntu環境にPython 3.11を用意し、`pip install ".[dev]"` で依存ライブラリをインストールした後、`python -m pytest` を実行します。実行結果はGitHubリポジトリの **Actions** タブ、またはPull Request・コミットのチェック欄で確認できます。
+
+push前には、上記のローカルテストを実行し、成功することを確認してください。
+
 実機のDHT22センサーや実際のTCP通信を使わずに確認できるよう、テスト内では一部の処理をテスト用の仮実装に置き換えています。
 
 ## 実行方法
