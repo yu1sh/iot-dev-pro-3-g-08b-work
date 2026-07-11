@@ -79,7 +79,7 @@ def fake_load_dotenv(env_file, verbose=True):
     return True
 
 
-def fake_render_template(template_name, input_from_python=None):
+def fake_render_template(template_name, input_from_python=None, modified_date=None):
     rows = input_from_python or []
     return "\n".join(",".join(row) for row in rows)
 
