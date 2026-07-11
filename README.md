@@ -122,10 +122,16 @@ sensor-dashboard = "server.src.web_dashboard:main"
 - `.env` の読み込みと必須項目チェック
 - Webダッシュボードの表示とCSVダウンロード
 
-テストはリポジトリのルートディレクトリで次のように実行します。
+テストを実行するには、開発用の依存ライブラリをインストールします。
 
 ```bash
-python -m unittest client.tests.test_env_loader client.tests.test_client_side server.tests.test_server_side
+pip install ".[dev]"
+```
+
+その後、リポジトリのルートディレクトリで次のように実行します。
+
+```bash
+python -m pytest
 ```
 
 実機のDHT22センサーや実際のTCP通信を使わずに確認できるよう、テスト内では一部の処理をテスト用の仮実装に置き換えています。

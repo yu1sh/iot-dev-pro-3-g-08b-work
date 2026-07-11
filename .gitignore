@@ -9,3 +9,7 @@ outputs/
 *.csv
 
 *.env
+
+.pytest_cache/
+build/
+iot_dev_pro_g08b.egg-info/
