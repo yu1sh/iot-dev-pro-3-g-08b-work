@@ -47,6 +47,9 @@ def download():
     file_name = f"sensor_readings_{dt}.csv"
     return send_file(CSV_FILE, as_attachment=True, download_name=file_name)
 
+"""
+@app.routeを使って確認ボタンとその挙動を追加
+"""
 
 def main():
     f_host, f_port = load_config()
