@@ -5,6 +5,7 @@
 import sys
 import json
 import time
+import uuid
 from pathlib import Path
 from datetime import datetime
 try:
@@ -28,6 +29,7 @@ MAX_SEND_RETRY = 3
 WAIT_INTERVAL = 10
 WAIT_INTERVAL_RETRY = 5
 SOCKET_TIMEOUT = 10
+MAX_ACK_SIZE = 4096
 
 dht22_instance = None
 
@@ -73,6 +75,7 @@ def save_local_csv(timestamp, tempe, humid, current_status):
 
 def build_sensor_payload(timestamp, tempe, humid, current_status=STATUS):
     return [{
+            "message_id": str(uuid.uuid4()),
             "timestamp": timestamp,
             "raspi_id": RASPI_ID,
             "sensor_id": SENSOR_ID,
@@ -82,11 +85,40 @@ def build_sensor_payload(timestamp, tempe, humid, current_status=STATUS):
             }]
 
 
+def receive_ack(server_socket, expected_message_id):
+    buffer = bytearray()
+
+    while True:
+        remaining = MAX_ACK_SIZE + 1 - len(buffer)
+        chunk = server_socket.recv(min(1024, remaining))
+        if not chunk:
+            raise ConnectionError("Server closed the connection before sending ACK")
+
+        buffer.extend(chunk)
+        newline_index = buffer.find(b"\n")
+
+        if newline_index < 0:
+            if len(buffer) > MAX_ACK_SIZE:
+                raise ValueError("ACK is too large")
+            continue
+
+        if newline_index > MAX_ACK_SIZE:
+            raise ValueError("ACK is too large")
+
+        ack = json.loads(bytes(buffer[:newline_index]).decode("utf-8", errors="strict"))
+        if not isinstance(ack, dict) or ack.get("status") != "ok":
+            raise ValueError(f"Server rejected the payload: {ack!r}")
+        if ack.get("message_id") != expected_message_id:
+            raise ValueError("ACK message_id does not match the sent payload")
+        return ack
+
+
 def send_sensor_payload(node_s, port_s, data_s_list):
     import socket
 
-    data_s_json = json.dumps(data_s_list)
-    data_s = data_s_json.encode('utf-8')
+    data_s_json = json.dumps(data_s_list, ensure_ascii=False, separators=(",", ":"))
+    data_s = data_s_json.encode("utf-8") + b"\n"
+    message_id = data_s_list[0]["message_id"]
     tempe = data_s_list[0]["tempe_dht_1"]
     humid = data_s_list[0]["humid_dht_1"]
 
@@ -102,8 +134,22 @@ def send_sensor_payload(node_s, port_s, data_s_list):
 
             socket_r_s.sendall(data_s)
             logger.info("Sent sensor data host=%s bytes=%s payload=%s", node_s, len(data_s), data_s_json)
+            receive_ack(socket_r_s, message_id)
+            logger.info(
+                "Received ACK host=%s port=%s message_id=%s",
+                node_s,
+                port_s,
+                message_id,
+            )
             return True
-        except (socket.timeout, ConnectionError, OSError):
+        except (
+            socket.timeout,
+            ConnectionError,
+            OSError,
+            UnicodeDecodeError,
+            json.JSONDecodeError,
+            ValueError,
+        ):
             logger.exception("Failed to send sensor data host=%s port=%s", node_s, port_s)
 
             if retry_count < MAX_SEND_RETRY:
