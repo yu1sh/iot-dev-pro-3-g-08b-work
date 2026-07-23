@@ -14,5 +14,8 @@ outputs/
 .pytest_cache/
 .coverage
 coverage.xml
+coverage*.json
+*-coverage.json
+*-test-results.xml
 build/
 iot_dev_pro_g08b.egg-info/
