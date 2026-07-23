@@ -1,4 +1,5 @@
-docs/
+docs/*
+!docs/技術資料.md
 __pycache__/
 *.pyc
 
@@ -11,5 +12,7 @@ outputs/
 *.env
 
 .pytest_cache/
+.coverage
+coverage.xml
 build/
 iot_dev_pro_g08b.egg-info/
