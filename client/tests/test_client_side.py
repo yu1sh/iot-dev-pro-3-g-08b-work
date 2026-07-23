@@ -10,6 +10,7 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import mock
+from uuid import UUID
 
 
 CLIENT_SRC = Path(__file__).resolve().parents[1] / "src"
@@ -97,6 +98,42 @@ class FailingSocket:
         pass
 
 
+class AckSocket:
+    def __init__(self, message_id, ack_chunks=None):
+        self.ack_chunks = list(
+            ack_chunks
+            or [
+                json.dumps({
+                    "status": "ok",
+                    "message_id": message_id,
+                    "duplicate": False,
+                }).encode("utf-8") + b"\n"
+            ]
+        )
+        self.sent = bytearray()
+        self.closed = False
+
+    def setsockopt(self, *args):
+        pass
+
+    def settimeout(self, *args):
+        pass
+
+    def connect(self, *args):
+        pass
+
+    def sendall(self, data):
+        self.sent.extend(data)
+
+    def recv(self, size):
+        if self.ack_chunks:
+            return self.ack_chunks.pop(0)
+        return b""
+
+    def close(self):
+        self.closed = True
+
+
 class SensorClientSideTest(unittest.TestCase):
     def test_get_dht_data_returns_temperature_and_humidity(self):
         sensor_client.dht22_instance = FakeDHT22(gpio=26)
@@ -125,17 +162,13 @@ class SensorClientSideTest(unittest.TestCase):
             "OK",
         )
 
-        self.assertEqual(
-            payload,
-            [{
-                "timestamp": "20260703-143000",
-                "raspi_id": sensor_client.RASPI_ID,
-                "sensor_id": sensor_client.SENSOR_ID,
-                "tempe_dht_1": 24.5,
-                "humid_dht_1": 56.0,
-                "status": "OK",
-            }],
-        )
+        self.assertEqual(payload[0]["timestamp"], "20260703-143000")
+        self.assertEqual(payload[0]["raspi_id"], sensor_client.RASPI_ID)
+        self.assertEqual(payload[0]["sensor_id"], sensor_client.SENSOR_ID)
+        self.assertEqual(payload[0]["tempe_dht_1"], 24.5)
+        self.assertEqual(payload[0]["humid_dht_1"], 56.0)
+        self.assertEqual(payload[0]["status"], "OK")
+        self.assertEqual(str(UUID(payload[0]["message_id"])), payload[0]["message_id"])
         self.assertIsInstance(json.dumps(payload), str)
 
     def test_save_local_csv_creates_header_and_data_row(self):
@@ -196,6 +229,37 @@ class SensorClientSideTest(unittest.TestCase):
         self.assertEqual(rows[1][-1], "SEND_FAILED")
         self.assertEqual(payload[0]["status"], "SEND_FAILED")
 
+    def test_send_uses_ndjson_and_waits_for_matching_ack(self):
+        payload = sensor_client.build_sensor_payload(
+            "20260703-143000",
+            24.5,
+            56.0,
+            "OK",
+        )
+        message_id = payload[0]["message_id"]
+        ack = json.dumps({
+            "status": "ok",
+            "message_id": message_id,
+            "duplicate": False,
+        }).encode("utf-8") + b"\n"
+        client_socket = AckSocket(message_id, [ack[:10], ack[10:]])
+
+        with mock.patch("socket.socket", return_value=client_socket):
+            result = sensor_client.send_sensor_payload("127.0.0.1", 8765, payload)
+
+        self.assertTrue(result)
+        self.assertTrue(client_socket.closed)
+        self.assertTrue(client_socket.sent.endswith(b"\n"))
+        self.assertEqual(json.loads(client_socket.sent), payload)
+
+    def test_receive_ack_rejects_mismatched_message_id(self):
+        expected_id = "12345678-1234-4234-8234-123456789abc"
+        other_id = "12345678-1234-4234-8234-123456789abd"
+        client_socket = AckSocket(other_id)
+
+        with self.assertRaises(ValueError):
+            sensor_client.receive_ack(client_socket, expected_id)
+
 
 class SensorReceiverServerSideTest(unittest.TestCase):
     def setUp(self):
@@ -219,7 +283,14 @@ class SensorReceiverServerSideTest(unittest.TestCase):
 
         self.assertEqual(
             row,
-            ["20260703-143000", sensor_client.RASPI_ID, 24.5, 56.0, sensor_client.SENSOR_ID, "OK"],
+            [
+                "20260703-143000",
+                sensor_client.RASPI_ID,
+                24.5,
+                56.0,
+                sensor_client.SENSOR_ID,
+                "OK",
+            ],
         )
 
     def test_server_csv_creates_header_and_saves_received_payload(self):
@@ -243,7 +314,7 @@ class SensorReceiverServerSideTest(unittest.TestCase):
             rows[0],
             ["timestamp", "raspi_id", "dht_temp", "dht_humid", "sensor_id", "status"],
         )
-        self.assertEqual(saved_row[-1], "WARNING")
+        self.assertEqual(saved_row[5], "WARNING")
         self.assertEqual(rows[1][-1], "WARNING")
 
     def test_invalid_json_is_rejected(self):
