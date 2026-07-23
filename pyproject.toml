@@ -22,6 +22,9 @@ testpaths = [
     "client/tests",
     "server/tests",
 ]
+markers = [
+    "integration: TCP、Flask、CSV書き込みをまたぐ統合テスト",
+]
 
 [tool.coverage.run]
 branch = true

@@ -14,6 +14,8 @@ from server.src import csv_writter as server_csv
 from server.src import sensor_receiver
 from server.src import web_dashboard
 
+pytestmark = pytest.mark.integration
+
 
 class ScriptedSocket:
     def __init__(self, chunks=(), send_error=None):
