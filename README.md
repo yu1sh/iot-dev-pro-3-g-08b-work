@@ -4,12 +4,12 @@ DHT22センサーで取得した温度・湿度をRaspberry Piからサーバー
 
 ## 構成
 
-| ディレクトリ | 内容 |
-|---|---|
-| `client/` | センサー値の取得とサーバーへの送信 |
-| `server/` | データの受信、CSV保存、Web表示 |
-| `Android/` | Android端末用HTML |
-| `systemd/` | Raspberry Pi自動起動用service |
+| ディレクトリ | 内容                               |
+| ------------ | ---------------------------------- |
+| `client/`  | センサー値の取得とサーバーへの送信 |
+| `server/`  | データの受信、CSV保存、Web表示     |
+| `Android/` | Android端末用HTML                  |
+| `systemd/` | Raspberry Pi自動起動用service      |
 
 通信仕様、内部処理、テスト、運用方法の詳細は[技術資料](docs/技術資料.md)を参照してください。
 
@@ -35,16 +35,16 @@ cp server/src/.env.example server/src/.env
 
 主な設定項目は次のとおりです。
 
-| ファイル | 項目 | 内容 |
-|---|---|---|
-| `client/src/.env` | `SERVER_IP` | 送信先サーバーのIPアドレス |
-| `client/src/.env` | `PORT_NUMBER` | センサーデータ送信先ポート |
-| `client/src/.env` | `RPI_ID` | Raspberry Piの識別子 |
-| `client/src/.env` | `SENSOR_ID` | センサーの識別子 |
-| `server/src/.env` | `SERVER_IP` | センサー受信サーバーの待受アドレス |
-| `server/src/.env` | `PORT_NUMBER` | センサーデータの待受ポート |
-| `server/src/.env` | `F_HOST` | Webダッシュボードの待受アドレス |
-| `server/src/.env` | `F_PORT` | Webダッシュボードの待受ポート |
+| ファイル            | 項目            | 内容                               |
+| ------------------- | --------------- | ---------------------------------- |
+| `client/src/.env` | `SERVER_IP`   | 送信先サーバーのIPアドレス         |
+| `client/src/.env` | `PORT_NUMBER` | センサーデータ送信先ポート         |
+| `client/src/.env` | `RPI_ID`      | Raspberry Piの識別子               |
+| `client/src/.env` | `SENSOR_ID`   | センサーの識別子                   |
+| `server/src/.env` | `SERVER_IP`   | センサー受信サーバーの待受アドレス |
+| `server/src/.env` | `PORT_NUMBER` | センサーデータの待受ポート         |
+| `server/src/.env` | `F_HOST`      | Webダッシュボードの待受アドレス    |
+| `server/src/.env` | `F_PORT`      | Webダッシュボードの待受ポート      |
 
 ## 実行方法
 
@@ -80,12 +80,12 @@ http://127.0.0.1:5001/
 
 ## 出力先
 
-| ファイル | 内容 |
-|---|---|
-| `server/outputs/sensor_readings.csv` | サーバーが受信したセンサーデータ |
+| ファイル                                      | 内容                                   |
+| --------------------------------------------- | -------------------------------------- |
+| `server/outputs/sensor_readings.csv`        | サーバーが受信したセンサーデータ       |
 | `client/outputs/failed_sensor_readings.csv` | センサー取得または送信に失敗したデータ |
-| `server/logs/` | サーバーログ |
-| `client/logs/` | クライアントログ |
+| `server/logs/`                              | サーバーログ                           |
+| `client/logs/`                              | クライアントログ                       |
 
 ## テスト
 
@@ -96,4 +96,4 @@ python -m pytest --cov=client/src --cov=server/src --cov-branch
 
 CIではPython 3.11から3.14で、単体テスト、ローカルTCP結合テスト、
 実Flaskテスト、並行CSV書き込みテスト、依存関係検査、構文検査を実行します。
-行・分岐カバレッジが90%未満の場合は失敗します。
+カバレッジが90%未満の場合は失敗します。
