@@ -2,32 +2,31 @@
 # -*- coding: utf-8 -*-
 
 import csv
+import os
 from datetime import datetime
-from pathlib import Path
 
 from flask import Flask, render_template, send_file
 try:
     from .csv_loader import check_csv
-    from .env_loader import load_required_env, parse_int_env
+    from .csv_writter import CSV_FILE
+    from .env_loader import find_env_file, load_env_file, parse_bool_env
     from .logger_setup import setup_logger
 except ImportError:
     from csv_loader import check_csv
-    from env_loader import load_required_env, parse_int_env
+    from csv_writter import CSV_FILE
+    from env_loader import find_env_file, load_env_file, parse_bool_env
     from logger_setup import setup_logger
 
 app = Flask(__name__)
 logger = setup_logger(__name__)
 
-CSV_DIR = Path(__file__).parent.parent / "outputs"
-CSV_FILE = CSV_DIR / "sensor_readings.csv"
-
-
 def load_config():
-    env_file = Path(__file__).with_name(".env")
-    if not env_file.exists():
-        env_file = Path.cwd() / "server" / "src" / ".env"
-    env = load_required_env(env_file, ["F_HOST", "F_PORT"], logger)
-    return env["F_HOST"], parse_int_env(env["F_PORT"], "F_PORT", logger)
+    load_env_file(find_env_file("server"))
+    return parse_bool_env(
+        os.environ.get("DEBUG_MODE", "false"),
+        "DEBUG_MODE",
+        logger,
+    )
 
 @app.route("/", methods=["GET"])
 def index():
@@ -52,13 +51,13 @@ def download():
 """
 
 def main():
-    f_host, f_port = load_config()
+    debug_mode = load_config()
+    f_host = "0.0.0.0"
+    f_port = 5001
     logger.info("Start flask server. host=%s, port %s", f_host, f_port)
-    app.run(host = f_host, port = f_port, debug=True, use_reloader=False)
+    app.run(host=f_host, port=f_port, debug=debug_mode, use_reloader=False)
     # use_reloader=False: 開発者モードの内、自動リロードのみ無効 -> 余計なログファイル生成を解決
-    # debug=True: コードを変更するたびにmainを再実行するため、その度にブラウザが追加で開く
-    # debug=True: 要は自動でリロードするため、ログファイルが2個生まれるってわけ
-    # 本番はセキュリティやログファイルの観点からdebug=Falseにするべき
+    # DEBUG_MODEの既定値は本番運用を考慮してFalse
 
 
 if __name__ == "__main__":

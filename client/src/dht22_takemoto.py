@@ -47,8 +47,10 @@
 import time
 import lgpio
 try:
+    from .env_loader import find_env_file, load_required_env, parse_int_env
     from .logger_setup import setup_logger
 except ImportError:
+    from env_loader import find_env_file, load_required_env, parse_int_env
     from logger_setup import setup_logger
 
 logger = setup_logger(__name__)
@@ -270,9 +272,10 @@ class DHT22:
  
 
 if __name__ == '__main__':
-    # read data using gpio 26
-    dht22_instance = DHT22(gpio=26)
-    logger.info("DHT22 sensor initialized on GPIO26")
+    env = load_required_env(find_env_file("client"), ["GPIO_NUMBER"], logger)
+    gpio_number = parse_int_env(env["GPIO_NUMBER"], "GPIO_NUMBER", logger)
+    dht22_instance = DHT22(gpio=gpio_number)
+    logger.info("DHT22 sensor initialized on GPIO%s", gpio_number)
 
     try:
          while True:

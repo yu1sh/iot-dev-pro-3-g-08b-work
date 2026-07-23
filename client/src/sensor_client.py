@@ -6,14 +6,13 @@ import sys
 import json
 import time
 import uuid
-from pathlib import Path
 from datetime import datetime
 try:
-    from .env_loader import load_required_env, parse_int_env
+    from .env_loader import find_env_file, load_required_env, parse_int_env
     from .logger_setup import setup_logger
     from .csv_writter import load_csv, save_csv
 except ImportError:
-    from env_loader import load_required_env, parse_int_env
+    from env_loader import find_env_file, load_required_env, parse_int_env
     from logger_setup import setup_logger
     from csv_writter import load_csv, save_csv
 
@@ -46,12 +45,10 @@ def load_dht22_module():
 
 
 def load_config():
-    env_file = Path(__file__).with_name(".env")
-    if not env_file.exists():
-        env_file = Path.cwd() / "client" / "src" / ".env"
+    env_file = find_env_file("client")
     env = load_required_env(
         env_file,
-        ["SERVER_IP", "PORT_NUMBER", "RPI_ID", "SENSOR_ID"],
+        ["SERVER_IP", "PORT_NUMBER", "RPI_ID", "SENSOR_ID", "GPIO_NUMBER"],
         logger,
     )
     return {
@@ -59,11 +56,14 @@ def load_config():
         "waiting_port": parse_int_env(env["PORT_NUMBER"], "PORT_NUMBER", logger),
         "raspi_id": env["RPI_ID"],
         "sensor_id": env["SENSOR_ID"],
+        "gpio_number": parse_int_env(env["GPIO_NUMBER"], "GPIO_NUMBER", logger),
     }
 
 
-def initialize_dht22(gpio=26):
+def initialize_dht22(gpio=None):
     global dht22_instance
+    if gpio is None:
+        gpio = load_config()["gpio_number"]
     dht22_module = load_dht22_module()
     dht22_instance = dht22_module.DHT22(gpio=gpio)
     return dht22_instance
@@ -238,7 +238,7 @@ def main():
     config = load_config()
     RASPI_ID = config["raspi_id"]
     SENSOR_ID = config["sensor_id"]
-    initialize_dht22()
+    initialize_dht22(config["gpio_number"])
 
     sys_argc = len(sys.argv)
     count = 1

@@ -334,22 +334,17 @@ def test_server_main_applies_cli_overrides(monkeypatch):
 
 
 def test_dashboard_load_config_and_main(monkeypatch):
-    monkeypatch.setattr(
-        web_dashboard,
-        "load_required_env",
-        mock.Mock(return_value={"F_HOST": "127.0.0.1", "F_PORT": "5001"}),
-    )
-    monkeypatch.setattr(web_dashboard, "parse_int_env", mock.Mock(return_value=5001))
-    assert web_dashboard.load_config() == ("127.0.0.1", 5001)
+    monkeypatch.setenv("DEBUG_MODE", "true")
+    assert web_dashboard.load_config() is True
 
-    monkeypatch.setattr(web_dashboard, "load_config", mock.Mock(return_value=("127.0.0.1", 5001)))
+    monkeypatch.setattr(web_dashboard, "load_config", mock.Mock(return_value=False))
     run = mock.Mock()
     monkeypatch.setattr(web_dashboard.app, "run", run)
     web_dashboard.main()
     run.assert_called_once_with(
-        host="127.0.0.1",
+        host="0.0.0.0",
         port=5001,
-        debug=True,
+        debug=False,
         use_reloader=False,
     )
 

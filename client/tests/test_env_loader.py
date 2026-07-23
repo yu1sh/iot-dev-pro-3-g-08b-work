@@ -49,7 +49,7 @@ def fake_load_dotenv(env_file, verbose=True):
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, value = line.split("=", 1)
-        os.environ[key.strip()] = value.strip().strip('"').strip("'")
+        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
     return True
 
 
@@ -79,11 +79,17 @@ class EnvLoaderTestMixin:
         self.assertEqual(values["SERVER_IP"], "127.0.0.1")
         self.assertEqual(values["PORT_NUMBER"], "8765")
 
-    def test_load_required_env_exits_when_env_file_is_missing(self):
+    def test_load_required_env_accepts_process_environment_without_env_file(self):
         missing_file = Path("/tmp/not-existing-env-file-for-test")
 
-        with self.assertRaises(SystemExit):
-            self.env_loader.load_required_env(missing_file, ["SERVER_IP"], self.logger)
+        with mock.patch.dict(os.environ, {"SERVER_IP": "192.0.2.1"}, clear=True):
+            values = self.env_loader.load_required_env(
+                missing_file,
+                ["SERVER_IP"],
+                self.logger,
+            )
+
+        self.assertEqual(values, {"SERVER_IP": "192.0.2.1"})
 
     def test_load_required_env_exits_when_required_key_is_missing(self):
         with TemporaryDirectory() as tmp_dir:
@@ -98,12 +104,71 @@ class EnvLoaderTestMixin:
                         self.logger,
                     )
 
+    def test_process_environment_takes_precedence_over_env_file(self):
+        with TemporaryDirectory() as tmp_dir:
+            env_file = Path(tmp_dir) / ".env"
+            env_file.write_text("SERVER_IP=from-file\n", encoding="utf-8")
+
+            with mock.patch.dict(
+                os.environ,
+                {"SERVER_IP": "from-process"},
+                clear=True,
+            ):
+                values = self.env_loader.load_required_env(
+                    env_file,
+                    ["SERVER_IP"],
+                    self.logger,
+                )
+
+        self.assertEqual(values["SERVER_IP"], "from-process")
+
+    def test_get_path_env_resolves_relative_path_from_env_file(self):
+        with TemporaryDirectory() as tmp_dir:
+            env_file = Path(tmp_dir) / ".env"
+            env_file.write_text("CSV_FILE=../data/output.csv\n", encoding="utf-8")
+
+            with (
+                mock.patch.dict(os.environ, {}, clear=True),
+                mock.patch.object(
+                    self.env_loader,
+                    "find_env_file",
+                    return_value=env_file,
+                ),
+            ):
+                path = self.env_loader.get_path_env(
+                    "CSV_FILE",
+                    Path("/default.csv"),
+                    "component",
+                )
+
+        self.assertEqual(path, env_file.parent / "../data/output.csv")
+
     def test_parse_int_env_returns_integer(self):
         self.assertEqual(self.env_loader.parse_int_env("8765", "PORT_NUMBER", self.logger), 8765)
 
     def test_parse_int_env_exits_when_value_is_not_integer(self):
         with self.assertRaises(SystemExit):
             self.env_loader.parse_int_env("not-number", "PORT_NUMBER", self.logger)
+
+    def test_parse_bool_env_accepts_common_boolean_values(self):
+        for value in ("1", "true", "yes", "on"):
+            with self.subTest(value=value):
+                self.assertTrue(
+                    self.env_loader.parse_bool_env(value, "DEBUG_MODE", self.logger)
+                )
+        for value in ("0", "false", "no", "off"):
+            with self.subTest(value=value):
+                self.assertFalse(
+                    self.env_loader.parse_bool_env(value, "DEBUG_MODE", self.logger)
+                )
+
+    def test_parse_bool_env_exits_when_value_is_invalid(self):
+        with self.assertRaises(SystemExit):
+            self.env_loader.parse_bool_env(
+                "not-boolean",
+                "DEBUG_MODE",
+                self.logger,
+            )
 
 
 class ClientEnvLoaderTest(EnvLoaderTestMixin, unittest.TestCase):

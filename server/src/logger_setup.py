@@ -5,13 +5,18 @@ import logging
 from pathlib import Path
 from datetime import datetime
 
-LOG_DIR = Path(__file__).parent.parent / "logs"
+try:
+    from .env_loader import get_path_env
+except ImportError:
+    from env_loader import get_path_env
+
+LOG_DIR = get_path_env("LOG_DIR", Path(__file__).parent.parent / "logs", "server")
 LOG_FILE = LOG_DIR / f"sensor_server_{datetime.now().strftime('%Y%m%d-%H%M%S')}.log"
 
 def setup_logger(
     name: str
 ) -> logging.Logger:
-    LOG_DIR.mkdir(exist_ok=True)
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
 
     logger_v = logging.getLogger(name)
     logger_v.setLevel(logging.INFO)

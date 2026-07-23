@@ -39,9 +39,14 @@ def test_load_config_and_initialize_sensor(tmp_path):
                 "PORT_NUMBER": "8765",
                 "RPI_ID": "raspi-ci",
                 "SENSOR_ID": "dht-ci",
+                "GPIO_NUMBER": "17",
             },
         ),
-        mock.patch.object(sensor_client, "parse_int_env", return_value=8765),
+        mock.patch.object(
+            sensor_client,
+            "parse_int_env",
+            side_effect=lambda value, _key, _logger: int(value),
+        ),
     ):
         config = sensor_client.load_config()
 
@@ -52,6 +57,7 @@ def test_load_config_and_initialize_sensor(tmp_path):
         "waiting_port": 8765,
         "raspi_id": "raspi-ci",
         "sensor_id": "dht-ci",
+        "gpio_number": 17,
     }
     fake_driver.DHT22.assert_called_once_with(gpio=17)
 
@@ -178,6 +184,7 @@ def test_main_applies_config_and_cli_overrides():
         "waiting_port": 8000,
         "raspi_id": "raspi-main",
         "sensor_id": "sensor-main",
+        "gpio_number": 26,
     }
     with (
         mock.patch.object(sensor_client, "load_config", return_value=config),
@@ -191,7 +198,7 @@ def test_main_applies_config_and_cli_overrides():
     ):
         sensor_client.main()
 
-    initialize.assert_called_once_with()
+    initialize.assert_called_once_with(26)
     run.assert_called_once_with("cli-host", 9000, "hello")
     assert sensor_client.RASPI_ID == "raspi-main"
     assert sensor_client.SENSOR_ID == "sensor-main"

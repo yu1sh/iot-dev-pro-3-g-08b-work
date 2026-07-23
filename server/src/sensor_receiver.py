@@ -9,13 +9,12 @@ import json
 import uuid
 import hashlib
 from collections import OrderedDict
-from pathlib import Path
 try:
-    from .env_loader import load_required_env, parse_int_env
+    from .env_loader import find_env_file, load_required_env, parse_int_env
     from .csv_writter import load_csv, save_csv
     from .logger_setup import setup_logger
 except ImportError:
-    from env_loader import load_required_env, parse_int_env
+    from env_loader import find_env_file, load_required_env, parse_int_env
     from csv_writter import load_csv, save_csv
     from logger_setup import setup_logger
 
@@ -38,9 +37,7 @@ class DuplicateMessageConflictError(ValueError):
 
 
 def load_config():
-    env_file = Path(__file__).with_name(".env")
-    if not env_file.exists():
-        env_file = Path.cwd() / "server" / "src" / ".env"
+    env_file = find_env_file("server")
     env = load_required_env(env_file, ["SERVER_IP", "PORT_NUMBER"], logger)
     return env["SERVER_IP"], parse_int_env(env["PORT_NUMBER"], "PORT_NUMBER", logger)
 

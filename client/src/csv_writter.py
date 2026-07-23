@@ -6,14 +6,20 @@ from pathlib import Path
 import threading
 try:
     from .logger_setup import setup_logger
+    from .env_loader import get_path_env
 except ImportError:
     from logger_setup import setup_logger
+    from env_loader import get_path_env
 
 logger = setup_logger(__name__)
 
-CSV_DIR = Path(__file__).parent.parent / "outputs"
-CSV_FILE = CSV_DIR / "failed_sensor_readings.csv"
-CSV_DIR.mkdir(exist_ok=True)
+CSV_FILE = get_path_env(
+    "CSV_FILE",
+    Path(__file__).parent.parent / "outputs" / "failed_sensor_readings.csv",
+    "client",
+)
+CSV_DIR = CSV_FILE.parent
+CSV_DIR.mkdir(parents=True, exist_ok=True)
 
 CSV_LOCK = threading.Lock()
 
