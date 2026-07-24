@@ -7,7 +7,7 @@ from unittest import mock
 import pytest
 
 
-DRIVER_PATH = Path(__file__).resolve().parents[1] / "src" / "dht22_takemoto.py"
+DRIVER_PATH = Path(__file__).resolve().parents[2] / "src" / "dht22_takemoto.py"
 
 
 class FakeLgpio(types.ModuleType):

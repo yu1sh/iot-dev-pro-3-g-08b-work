@@ -6,7 +6,7 @@ from unittest import mock
 import pytest
 
 
-CLIENT_SRC = Path(__file__).resolve().parents[1] / "src"
+CLIENT_SRC = Path(__file__).resolve().parents[2] / "src"
 sys.path.insert(0, str(CLIENT_SRC))
 
 import sensor_client

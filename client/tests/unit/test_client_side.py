@@ -13,8 +13,8 @@ from unittest import mock
 from uuid import UUID
 
 
-CLIENT_SRC = Path(__file__).resolve().parents[1] / "src"
-REPO_ROOT = Path(__file__).resolve().parents[2]
+CLIENT_SRC = Path(__file__).resolve().parents[2] / "src"
+REPO_ROOT = Path(__file__).resolve().parents[3]
 SERVER_SRC = REPO_ROOT / "server" / "src"
 sys.path.insert(0, str(CLIENT_SRC))
 

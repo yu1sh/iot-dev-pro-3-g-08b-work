@@ -353,7 +353,7 @@ def test_dashboard_load_config_and_main(monkeypatch):
 
 def test_systemd_unit_has_network_order_restart_and_absolute_exec_path():
     unit_file = (
-        Path(__file__).resolve().parents[2]
+        Path(__file__).resolve().parents[3]
         / "systemd"
         / "iot-sensor_client.service"
     )

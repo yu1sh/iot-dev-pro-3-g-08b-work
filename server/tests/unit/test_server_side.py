@@ -13,7 +13,7 @@ from tempfile import TemporaryDirectory
 from unittest import mock
 
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 SERVER_SRC = REPO_ROOT / "server" / "src"
 
 
