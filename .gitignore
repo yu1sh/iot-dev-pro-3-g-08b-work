@@ -19,3 +19,5 @@ coverage*.json
 *-test-results.xml
 build/
 iot_dev_pro_g08b.egg-info/
+
+*.service

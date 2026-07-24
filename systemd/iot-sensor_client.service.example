@@ -1,0 +1,17 @@
+[Unit]
+Description=IoT Sensor Client
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User= example-name                                      # 自身のラズパイのユーザ名を入力(必須)
+WorkingDirectory=/path/to/iot-dev-pro-3-g-08b-work      # cloneしたディレクトリのパスを指定(必須)
+# 以下venvのディレクトリと、sensor_client.pyまでのパスを指定(必須)
+ExecStart=/path/to/iot-dev-pro-3-g-08b-work/venv/bin/python /path/to/iot-dev-pro-3-g-08b-work/client/src/sensor_client.py
+Restart=always
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
