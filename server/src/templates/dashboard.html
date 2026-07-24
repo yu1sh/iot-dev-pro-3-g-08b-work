@@ -21,7 +21,9 @@
           <th>日時</th>
           <th>端末</th>
           <th>温度(℃)</th>
+          <th>温度(前データ差)</th>
           <th>湿度(パーセント)</th>
+          <th>湿度(前データ差)</th>
           <th>センサ</th>
           <th>ステータス</th>
         </tr>
@@ -32,7 +34,21 @@
           <td>{{ value[0] }}</td>
           <td>{{ value[1] }}</td>
           <td>{{ value[2] }}</td>
+          <td>
+            {% if loop.previtem %}
+              {{ ((value[2] | float) - (loop.previtem[2] | float)) | round(1) }}
+            {% else %}
+              -
+            {% endif %}
+          </td>
           <td>{{ value[3] }}</td>
+          <td>
+            {% if loop.previtem %}
+              {{ ((value[3] | float) - (loop.previtem[3] | float)) | round(1) }}
+            {% else %}
+              -
+            {% endif %}
+          </td>
           <td>{{ value[4] }}</td>
           <td>{{ value[5] }}</td>
         </tr>
