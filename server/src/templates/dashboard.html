@@ -11,24 +11,28 @@
     <h1>温湿度情報</h1>
     <p>更新日：<time>{{ modified_date }}</time></p>
     <table border="1">
-      <tr>
-        <th>日時</th>
-        <th>端末</th>
-        <th>温度(℃)</th>
-        <th>湿度(パーセント)</th>
-        <th>センサ</th>
-        <th>ステータス</th>
-      </tr>
-      {% for value in input_from_python[1:] %}
-      <tr>
-        <td>{{ value[0] }}</td>
-        <td>{{ value[1] }}</td>
-        <td>{{ value[2] }}</td>
-        <td>{{ value[3] }}</td>
-        <td>{{ value[4] }}</td>
-        <td>{{ value[5] }}</td>
-      </tr>
-      {% endfor %}
+      <thead>    
+        <tr>
+          <th>日時</th>
+          <th>端末</th>
+          <th>温度(℃)</th>
+          <th>湿度(パーセント)</th>
+          <th>センサ</th>
+          <th>ステータス</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for value in input_from_python[1:] %}
+        <tr>
+          <td>{{ value[0] }}</td>
+          <td>{{ value[1] }}</td>
+          <td>{{ value[2] }}</td>
+          <td>{{ value[3] }}</td>
+          <td>{{ value[4] }}</td>
+          <td>{{ value[5] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
     </table>
 
     <a href="/files">
@@ -36,4 +40,27 @@
       <button type="button">CSVファイルを保存</button>
     </a>
   </body>
+  <script>
+    const allTables = document.querySelectorAll("table");
+
+    for (const table of allTables) {
+      const tBody = table.tBodies[0];
+      const rows = Array.from(tBody.rows);
+      const headerCells = table.tHead.rows[0].cells;
+
+      for (const th of headerCells) {
+        const cellIndex = th.cellIndex;
+
+        th.addEventListener("click", () => {
+          rows.sort((tr1, tr2) => {
+            const tr1Text = tr1.cells[cellIndex].textContent;
+            const tr2Text = tr2.cells[cellIndex].textContent;
+            return tr1Text.localeCompare(tr2Text);
+          });
+
+          tBody.append(...rows);
+        });
+      }
+    }
+  </script>
 </html>
