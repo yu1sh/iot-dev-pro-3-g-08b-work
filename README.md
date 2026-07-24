@@ -8,8 +8,10 @@ DHT22センサーで取得した温度・湿度をRaspberry Piからサーバー
 | ------------ | ---------------------------------- |
 | `client/`  | センサー値の取得とサーバーへの送信 |
 | `server/`  | データの受信、CSV保存、Web表示     |
-| `Android/` | Android端末用HTML                  |
+| `mobile-web/` | モバイル端末からダッシュボードを開くためのHTML |
 | `systemd/` | Raspberry Pi自動起動用service      |
+| `scripts/` | CIのテスト結果・カバレッジ集計     |
+| `docs/`    | 技術資料と授業資料                 |
 
 通信仕様、内部処理、テスト、運用方法の詳細は[技術資料](docs/技術資料.md)を参照してください。
 
@@ -20,9 +22,17 @@ DHT22センサーで取得した温度・湿度をRaspberry Piからサーバー
 
 ## セットアップ
 
-リポジトリのルートディレクトリで依存ライブラリをインストールします。
+リポジトリのルートディレクトリで、実行する役割に応じた依存ライブラリを
+インストールします。
 
 ```bash
+# 受信サーバーとWebダッシュボード
+pip install ".[server]"
+
+# Raspberry Piのセンサークライアント（lgpioを含む）
+pip install ".[client]"
+
+# dotenvなどの共通機能だけが必要な場合
 pip install .
 ```
 
@@ -35,15 +45,24 @@ cp server/.env.example server/.env
 
 主な設定項目は次のとおりです。
 
-| ファイル            | 項目            | 内容                               |
-| ------------------- | --------------- | ---------------------------------- |
-| `client/.env` | `SERVER_IP`   | 送信先サーバーのIPアドレス         |
-| `client/.env` | `PORT_NUMBER` | センサーデータ送信先ポート         |
-| `client/.env` | `RPI_ID`      | Raspberry Piの識別子               |
-| `client/.env` | `SENSOR_ID`   | センサーの識別子                   |
-| `server/.env` | `SERVER_IP`   | センサー受信サーバーの待受アドレス |
-| `server/.env` | `PORT_NUMBER` | センサーデータの待受ポート         |
-| `server/.env` | `DEBUG_MODE`  | Webダッシュボードのデバッグ設定    |
+| ファイル | 項目 | 必須 | 内容 |
+| --- | --- | --- | --- |
+| `client/.env` | `SERVER_IP` | 必須 | 送信先サーバーのIPアドレス |
+| `client/.env` | `PORT_NUMBER` | 必須 | センサーデータ送信先ポート |
+| `client/.env` | `RPI_ID` | 必須 | Raspberry Piの識別子 |
+| `client/.env` | `SENSOR_ID` | 必須 | センサーの識別子 |
+| `client/.env` | `GPIO_NUMBER` | 必須 | DHT22のデータ線を接続するGPIO番号 |
+| `client/.env` | `CSV_FILE` | 任意 | 失敗データCSV。既定値は`outputs/failed_sensor_readings.csv` |
+| `client/.env` | `LOG_DIR` | 任意 | ログ保存先。既定値は`logs` |
+| `server/.env` | `SERVER_IP` | 必須 | センサー受信サーバーの待受アドレス |
+| `server/.env` | `PORT_NUMBER` | 必須 | センサーデータの待受ポート |
+| `server/.env` | `CSV_FILE` | 任意 | 受信データCSV。既定値は`outputs/sensor_readings.csv` |
+| `server/.env` | `LOG_DIR` | 任意 | ログ保存先。既定値は`logs` |
+| `server/.env` | `DEBUG_MODE` | 任意 | Webダッシュボードのデバッグ設定。既定値は`false` |
+
+`CSV_FILE`と`LOG_DIR`に相対パスを指定した場合は、それぞれの`.env`がある
+ディレクトリを基準に解決します。同名のプロセス環境変数がある場合は、その値が
+`.env`より優先されます。
 
 ## 実行方法
 
@@ -51,6 +70,8 @@ cp server/.env.example server/.env
 
 ```bash
 sensor-receiver
+# 一時的に待受アドレスとポートを上書きする場合
+sensor-receiver -h 0.0.0.0 -p 8765
 ```
 
 Webダッシュボード：
@@ -63,6 +84,8 @@ sensor-dashboard
 
 ```bash
 sensor-client
+# 一時的に送信先とポートを上書きする場合
+sensor-client -h 192.0.2.10 -p 8765
 ```
 
 Webダッシュボードは、標準設定では次のURLから確認できます。
@@ -77,6 +100,33 @@ http://サーバー端末のIPアドレス:5001/
 http://127.0.0.1:5001/
 ```
 
+ダッシュボードには次の機能があります。
+
+- 5秒ごとの自動更新と、見出しクリックによる列の昇順ソート
+- `/files`からの受信データCSVダウンロード
+- `/files/import`への`failed_sensor_readings.csv`取り込み
+
+アップロードできるファイルは2 MiB以下のCSVです。CSVはUTF-8、所定の6列、
+`YYYYMMDD-HHMMSS`形式の日時、対応ステータスを満たす必要があります。
+
+`mobile-web/index.html`は、モバイル端末からダッシュボードを開くためのリンクです。
+ファイル内のIPアドレスを実際のサーバーアドレスに変更してから使用してください。
+
+## データ形式
+
+クライアントは1測定を1要素のJSON配列にし、末尾に改行を付けたNDJSONとして
+送信します。測定間隔は10秒です。サーバーはCSV保存後に`message_id`付きACKを
+返し、同じID・同じ内容の再送は二重保存しません。
+
+CSVはクライアント・サーバー共通で次の6列です。
+
+```text
+timestamp,raspi_id,dht_temp,dht_humid,sensor_id,status
+```
+
+`timestamp`はローカル時刻の`YYYYMMDD-HHMMSS`形式です。`status`は
+`OK`、`WARNING`、`ERROR`、`SEND_FAILED`のいずれかです。
+
 ## 出力先
 
 | ファイル                                      | 内容                                   |
@@ -85,6 +135,18 @@ http://127.0.0.1:5001/
 | `client/outputs/failed_sensor_readings.csv` | センサー取得または送信に失敗したデータ |
 | `server/logs/`                              | サーバーログ                           |
 | `client/logs/`                              | クライアントログ                       |
+
+## Raspberry Piでの自動起動
+
+`systemd/iot-sensor_client.service.example`をコピーし、`User`、
+`WorkingDirectory`、`ExecStart`を実際の環境に合わせて変更したうえで登録します。
+
+```bash
+sudo cp systemd/iot-sensor_client.service.example \
+  /etc/systemd/system/iot-sensor_client.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now iot-sensor_client.service
+```
 
 ## テスト
 
