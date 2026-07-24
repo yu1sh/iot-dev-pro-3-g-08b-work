@@ -10,6 +10,8 @@
   <body>
     <h1>温湿度情報</h1>
     <p>更新日：<time>{{ modified_date }}</time></p>
+    <p>温度平均：{{ temperature_average }}</p>
+    <p>湿度平均：{{ humidity_average }}</p>
     {% if import_message %}
     <p role="status" {% if not import_succeeded %}style="color: #b00020"{% endif %}>
       {{ import_message }}

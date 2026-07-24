@@ -42,12 +42,18 @@ def render_dashboard(import_message=None, import_succeeded=None):
         with open(CSV_FILE, newline="", encoding="utf-8") as f:
             csv_data = list(csv.reader(f))
     last_timestamp = csv_data[-1][0] if len(csv_data) > 1 else "データなし"
+    temperatures = [float(row[2]) for row in csv_data[1:] if row[2]]
+    avg_temp = round(sum(temperatures) / len(temperatures), 1) if temperatures else 0
+    humidities = [float(row[3]) for row in csv_data[1:] if row[3]]
+    avg_humidity = round(sum(humidities) / len(humidities), 1) if humidities else 0
     return render_template(
         "dashboard.html",
         input_from_python=csv_data,
         modified_date=last_timestamp,
         import_message=import_message,
         import_succeeded=import_succeeded,
+        temperature_average=avg_temp,
+        humidity_average=avg_humidity
     )
 
 
