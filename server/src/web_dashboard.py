@@ -5,19 +5,20 @@ import csv
 import os
 from datetime import datetime
 
-from flask import Flask, render_template, send_file
+from flask import Flask, render_template, request, send_file
 try:
-    from .csv_loader import check_csv
-    from .csv_writter import CSV_FILE
+    from .csv_loader import CsvImportError, check_csv, merge_uploaded_csv
+    from .csv_writter import CSV_FILE, CSV_LOCK
     from .env_loader import find_env_file, load_env_file, parse_bool_env
     from .logger_setup import setup_logger
 except ImportError:
-    from csv_loader import check_csv
-    from csv_writter import CSV_FILE
+    from csv_loader import CsvImportError, check_csv, merge_uploaded_csv
+    from csv_writter import CSV_FILE, CSV_LOCK
     from env_loader import find_env_file, load_env_file, parse_bool_env
     from logger_setup import setup_logger
 
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024
 logger = setup_logger(__name__)
 
 def load_config():
@@ -32,11 +33,50 @@ def load_config():
 def index():
     logger.info("Dashboard request received")
 
-    check_csv(CSV_FILE, logger)
-    with open(CSV_FILE, newline="", encoding="utf-8") as f:
-        csv_data = list(csv.reader(f))
-        last_timestamp = csv_data[-1][0]
-    return render_template("dashboard.html", input_from_python = csv_data, modified_date = last_timestamp)
+    return render_dashboard()
+
+
+def render_dashboard(import_message=None, import_succeeded=None):
+    with CSV_LOCK:
+        check_csv(CSV_FILE, logger)
+        with open(CSV_FILE, newline="", encoding="utf-8") as f:
+            csv_data = list(csv.reader(f))
+    last_timestamp = csv_data[-1][0] if len(csv_data) > 1 else "データなし"
+    return render_template(
+        "dashboard.html",
+        input_from_python=csv_data,
+        modified_date=last_timestamp,
+        import_message=import_message,
+        import_succeeded=import_succeeded,
+    )
+
+
+@app.route("/files/import", methods=["POST"])
+def import_csv():
+    uploaded_file = request.files.get("csv_file")
+    if uploaded_file is None or not uploaded_file.filename:
+        return render_dashboard("CSVファイルを選択してください。", False), 400
+    if not uploaded_file.filename.lower().endswith(".csv"):
+        return render_dashboard("CSV形式のファイルを選択してください。", False), 400
+
+    try:
+        with CSV_LOCK:
+            added_count, duplicate_count = merge_uploaded_csv(
+                CSV_FILE,
+                uploaded_file,
+                logger,
+            )
+    except CsvImportError as exc:
+        logger.warning("CSV import rejected filename=%s reason=%s", uploaded_file.filename, exc)
+        return render_dashboard(str(exc), False), 400
+    except OSError:
+        logger.exception("Failed to import CSV filename=%s", uploaded_file.filename)
+        return render_dashboard("CSVの保存に失敗しました。", False), 500
+
+    return render_dashboard(
+        f"{added_count}件を追加しました（重複 {duplicate_count}件）。",
+        True,
+    )
 
 
 @app.route('/files')
@@ -44,7 +84,9 @@ def download():
     logger.info("Download CSV")
     dt = datetime.now().strftime("%Y%m%d%H%M%S")
     file_name = f"sensor_readings_{dt}.csv"
-    return send_file(CSV_FILE, as_attachment=True, download_name=file_name)
+    with CSV_LOCK:
+        check_csv(CSV_FILE, logger)
+        return send_file(CSV_FILE, as_attachment=True, download_name=file_name)
 
 """
 @app.routeを使って確認ボタンとその挙動を追加

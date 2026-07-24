@@ -79,6 +79,23 @@ class EnvLoaderTestMixin:
         self.assertEqual(values["SERVER_IP"], "127.0.0.1")
         self.assertEqual(values["PORT_NUMBER"], "8765")
 
+    def test_find_env_file_finds_component_root_env(self):
+        with TemporaryDirectory() as tmp_dir:
+            component_dir = Path(tmp_dir) / "component"
+            source_dir = component_dir / "src"
+            source_dir.mkdir(parents=True)
+            env_file = component_dir / ".env"
+            env_file.write_text("SERVER_IP=127.0.0.1\n", encoding="utf-8")
+
+            with mock.patch.object(
+                self.env_loader,
+                "__file__",
+                str(source_dir / "env_loader.py"),
+            ):
+                result = self.env_loader.find_env_file("component")
+
+        self.assertEqual(result, env_file)
+
     def test_load_required_env_accepts_process_environment_without_env_file(self):
         missing_file = Path("/tmp/not-existing-env-file-for-test")
 

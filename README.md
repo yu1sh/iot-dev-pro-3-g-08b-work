@@ -29,22 +29,21 @@ pip install .
 設定ファイルを作成します。
 
 ```bash
-cp client/src/.env.example client/src/.env
-cp server/src/.env.example server/src/.env
+cp client/.env.example client/.env
+cp server/.env.example server/.env
 ```
 
 主な設定項目は次のとおりです。
 
 | ファイル            | 項目            | 内容                               |
 | ------------------- | --------------- | ---------------------------------- |
-| `client/src/.env` | `SERVER_IP`   | 送信先サーバーのIPアドレス         |
-| `client/src/.env` | `PORT_NUMBER` | センサーデータ送信先ポート         |
-| `client/src/.env` | `RPI_ID`      | Raspberry Piの識別子               |
-| `client/src/.env` | `SENSOR_ID`   | センサーの識別子                   |
-| `server/src/.env` | `SERVER_IP`   | センサー受信サーバーの待受アドレス |
-| `server/src/.env` | `PORT_NUMBER` | センサーデータの待受ポート         |
-| `server/src/.env` | `F_HOST`      | Webダッシュボードの待受アドレス    |
-| `server/src/.env` | `F_PORT`      | Webダッシュボードの待受ポート      |
+| `client/.env` | `SERVER_IP`   | 送信先サーバーのIPアドレス         |
+| `client/.env` | `PORT_NUMBER` | センサーデータ送信先ポート         |
+| `client/.env` | `RPI_ID`      | Raspberry Piの識別子               |
+| `client/.env` | `SENSOR_ID`   | センサーの識別子                   |
+| `server/.env` | `SERVER_IP`   | センサー受信サーバーの待受アドレス |
+| `server/.env` | `PORT_NUMBER` | センサーデータの待受ポート         |
+| `server/.env` | `DEBUG_MODE`  | Webダッシュボードのデバッグ設定    |
 
 ## 実行方法
 

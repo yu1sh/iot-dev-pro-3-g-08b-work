@@ -1,4 +1,5 @@
 import csv
+import io
 import json
 import socket
 import threading
@@ -291,6 +292,39 @@ def test_actual_flask_dashboard_handles_missing_csv_and_downloads_it(
     disposition = download_response.headers["Content-Disposition"]
     assert disposition.startswith("attachment;")
     assert "sensor_readings_" in disposition
+
+
+def test_actual_flask_dashboard_imports_local_csv_in_timestamp_order(
+    tmp_path,
+    monkeypatch,
+):
+    csv_file = tmp_path / "sensor_readings.csv"
+    csv_file.write_text(
+        "timestamp,raspi_id,dht_temp,dht_humid,sensor_id,status\n"
+        "20260723-120010,raspi-ci,25.0,57.0,dht-ci,OK\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(web_dashboard, "CSV_FILE", csv_file)
+    upload = (
+        b"timestamp,raspi_id,dht_temp,dht_humid,sensor_id,status\n"
+        b"20260723-120020,raspi-ci,26.0,58.0,dht-ci,SEND_FAILED\n"
+        b"20260723-120000,raspi-ci,24.0,56.0,dht-ci,SEND_FAILED\n"
+    )
+
+    response = web_dashboard.app.test_client().post(
+        "/files/import",
+        data={"csv_file": (io.BytesIO(upload), "failed_sensor_readings.csv")},
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 200
+    assert "2件を追加しました" in response.get_data(as_text=True)
+    with csv_file.open(newline="", encoding="utf-8") as f:
+        assert [row[0] for row in list(csv.reader(f))[1:]] == [
+            "20260723-120000",
+            "20260723-120010",
+            "20260723-120020",
+        ]
 
 
 def test_server_startup_and_keyboard_interrupt_shutdown(monkeypatch):

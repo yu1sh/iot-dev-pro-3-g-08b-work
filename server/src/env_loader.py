@@ -9,10 +9,17 @@ from dotenv import load_dotenv
 
 
 def find_env_file(component):
-    env_file = Path(__file__).with_name(".env")
-    if env_file.exists():
-        return env_file
-    return Path.cwd() / component / "src" / ".env"
+    component_dir = Path(__file__).resolve().parent.parent
+    candidates = [
+        component_dir / ".env",
+        Path(__file__).with_name(".env"),
+        Path.cwd() / component / ".env",
+        Path.cwd() / component / "src" / ".env",
+    ]
+    for env_file in candidates:
+        if env_file.exists():
+            return env_file
+    return component_dir / ".env"
 
 
 def load_env_file(env_file):

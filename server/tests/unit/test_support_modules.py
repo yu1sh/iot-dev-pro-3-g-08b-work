@@ -1,7 +1,9 @@
 import csv
 import importlib.util
+import io
 import logging
 from pathlib import Path
+from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
@@ -121,3 +123,47 @@ def test_check_csv_keeps_valid_csv_unchanged(csv_loader, tmp_path):
     csv_loader.check_csv(csv_file, FakeLogger())
 
     assert read_csv_rows(csv_file) == expected_rows
+
+
+def uploaded_csv(text):
+    return SimpleNamespace(stream=io.BytesIO(text.encode("utf-8")))
+
+
+def test_merge_uploaded_csv_inserts_in_timestamp_order_and_skips_duplicates(
+    csv_loader, tmp_path
+):
+    csv_file = tmp_path / "sensor_readings.csv"
+    csv_file.write_text(
+        ",".join(csv_loader.CSV_HEADER) + "\n"
+        "20260723-120010,raspi_001,25.0,57.0,dht_1,OK\n",
+        encoding="utf-8",
+    )
+    upload = uploaded_csv(
+        ",".join(csv_loader.CSV_HEADER) + "\n"
+        "20260723-120020,raspi_001,26.0,58.0,dht_1,SEND_FAILED\n"
+        "20260723-120000,raspi_001,24.0,56.0,dht_1,SEND_FAILED\n"
+        "20260723-120010,raspi_001,25.0,57.0,dht_1,OK\n"
+    )
+
+    added, duplicates = csv_loader.merge_uploaded_csv(
+        csv_file, upload, FakeLogger()
+    )
+
+    assert (added, duplicates) == (2, 1)
+    assert [row[0] for row in read_csv_rows(csv_file)[1:]] == [
+        "20260723-120000",
+        "20260723-120010",
+        "20260723-120020",
+    ]
+
+
+def test_merge_uploaded_csv_rejects_invalid_timestamp(csv_loader, tmp_path):
+    upload = uploaded_csv(
+        ",".join(csv_loader.CSV_HEADER) + "\n"
+        "invalid,raspi_001,24.0,56.0,dht_1,SEND_FAILED\n"
+    )
+
+    with pytest.raises(csv_loader.CsvImportError, match="日時"):
+        csv_loader.merge_uploaded_csv(
+            tmp_path / "sensor_readings.csv", upload, FakeLogger()
+        )

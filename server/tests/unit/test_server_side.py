@@ -73,6 +73,7 @@ class FakeFlask:
     def __init__(self, name):
         self.name = name
         self.routes = {}
+        self.config = {}
 
     def route(self, path, methods=None):
         def decorator(func):
@@ -97,7 +98,12 @@ def fake_load_dotenv(env_file, verbose=True):
     return True
 
 
-def fake_render_template(template_name, input_from_python=None, modified_date=None):
+def fake_render_template(
+    template_name,
+    input_from_python=None,
+    modified_date=None,
+    **kwargs,
+):
     rows = input_from_python or []
     return "\n".join(",".join(row) for row in rows)
 
@@ -133,6 +139,7 @@ class ServerModuleTestCase(unittest.TestCase):
         fake_flask = types.ModuleType("flask")
         fake_flask.Flask = FakeFlask
         fake_flask.render_template = fake_render_template
+        fake_flask.request = types.SimpleNamespace(files={})
         fake_flask.send_file = fake_send_file
         sys.modules["flask"] = fake_flask
 

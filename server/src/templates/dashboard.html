@@ -10,6 +10,11 @@
   <body>
     <h1>温湿度情報</h1>
     <p>更新日：<time>{{ modified_date }}</time></p>
+    {% if import_message %}
+    <p role="status" {% if not import_succeeded %}style="color: #b00020"{% endif %}>
+      {{ import_message }}
+    </p>
+    {% endif %}
     <table border="1">
       <thead>    
         <tr>
@@ -39,6 +44,15 @@
       <br />
       <button type="button">CSVファイルを保存</button>
     </a>
+
+    <h2>ラズパイのローカル保存データを追加</h2>
+    <p>
+      <code>failed_sensor_readings.csv</code>を選択すると、既存データへ日時順で追加します。
+    </p>
+    <form action="/files/import" method="post" enctype="multipart/form-data">
+      <input type="file" name="csv_file" accept=".csv,text/csv" required />
+      <button type="submit">CSVデータを追加</button>
+    </form>
   </body>
   <script>
     const allTables = document.querySelectorAll("table");
