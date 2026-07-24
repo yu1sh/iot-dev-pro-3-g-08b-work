@@ -78,6 +78,13 @@ def import_csv():
         True,
     )
 
+@app.route("/confirm", methods=["POST"])
+def confirm():
+    logger.info("Confirm button pressed")
+    return render_dashboard(
+        import_message="確認しました",
+        import_succeeded=True,
+    )
 
 @app.route('/files')
 def download():
@@ -88,9 +95,6 @@ def download():
         check_csv(CSV_FILE, logger)
         return send_file(CSV_FILE, as_attachment=True, download_name=file_name)
 
-"""
-@app.routeを使って確認ボタンとその挙動を追加
-"""
 
 def main():
     debug_mode = load_config()
