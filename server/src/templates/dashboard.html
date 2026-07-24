@@ -69,12 +69,17 @@
       for (const th of headerCells) {
         const cellIndex = th.cellIndex;
 
+        let isAsc = true;
+
         th.addEventListener("click", () => {
           rows.sort((tr1, tr2) => {
             const tr1Text = tr1.cells[cellIndex].textContent;
             const tr2Text = tr2.cells[cellIndex].textContent;
-            return tr1Text.localeCompare(tr2Text);
+            const result = tr1Text.localeCompare(tr2Text, undefined, { numeric: true });
+            return isAsc ? result : -result;
           });
+
+          isAsc = !isAsc;
 
           tBody.append(...rows);
         });
