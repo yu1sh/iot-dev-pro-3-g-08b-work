@@ -9,7 +9,7 @@ DHT22センサーで取得した温度・湿度をRaspberry Piからサーバー
 | `client/`  | センサー値の取得とサーバーへの送信 |
 | `server/`  | データの受信、CSV保存、Web表示     |
 | `mobile-web/` | モバイル端末からダッシュボードを開くためのHTML |
-| `systemd/` | Raspberry Pi自動起動用service      |
+| `systemd/` | Raspberry Pi・サーバー自動起動用service |
 | `scripts/` | CIのテスト結果・カバレッジ集計     |
 | `docs/`    | 技術資料と授業資料                 |
 
@@ -146,6 +146,34 @@ sudo cp systemd/iot-sensor_client.service.example \
   /etc/systemd/system/iot-sensor_client.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now iot-sensor_client.service
+```
+
+## サーバーでの自動起動
+
+センサーデータ受信とWebダッシュボードは別プロセスで動作するため、それぞれ
+独立したserviceとして登録します。別環境へ導入する場合は、2つの`.example`を
+コピーし、`User`、`WorkingDirectory`、`ExecStart`を実際の環境に合わせて
+変更します。
+
+```bash
+sudo cp systemd/iot-sensor_receiver.service.example \
+  /etc/systemd/system/iot-sensor_receiver.service
+sudo cp systemd/iot-sensor_dashboard.service.example \
+  /etc/systemd/system/iot-sensor_dashboard.service
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now \
+  iot-sensor_receiver.service \
+  iot-sensor_dashboard.service
+```
+
+起動状態とログは次のコマンドで確認できます。
+
+```bash
+systemctl status iot-sensor_receiver.service
+systemctl status iot-sensor_dashboard.service
+journalctl -u iot-sensor_receiver.service
+journalctl -u iot-sensor_dashboard.service
 ```
 
 ## テスト

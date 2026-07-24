@@ -1,0 +1,19 @@
+[Unit]
+Description=IoT Sensor Receiver
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+# サーバーを実行するユーザー名を指定（必須）
+User=example-name
+# cloneしたディレクトリの絶対パスを指定（必須）
+WorkingDirectory=/path/to/iot-dev-pro-3-g-08b-work
+# 仮想環境のPythonとsensor_receiver.pyの絶対パスを指定（必須）
+ExecStart=/path/to/iot-dev-pro-3-g-08b-work/venv/bin/python /path/to/iot-dev-pro-3-g-08b-work/server/src/sensor_receiver.py
+Restart=always
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

@@ -108,9 +108,18 @@ def fake_render_template(
     return "\n".join(",".join(row) for row in rows)
 
 
-def fake_send_file(file_path, as_attachment=False, download_name=None):
+def fake_send_file(
+    file_path,
+    as_attachment=False,
+    download_name=None,
+    mimetype=None,
+):
+    if hasattr(file_path, "read"):
+        data = file_path.read().decode("utf-8")
+    else:
+        data = Path(file_path).read_text(encoding="utf-8")
     return FakeResponse(
-        Path(file_path).read_text(encoding="utf-8"),
+        data,
         headers={
             "Content-Disposition": f"attachment; filename={download_name}",
         },

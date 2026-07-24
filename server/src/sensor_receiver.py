@@ -11,11 +11,11 @@ import hashlib
 from collections import OrderedDict
 try:
     from .env_loader import find_env_file, load_required_env, parse_int_env
-    from .csv_writter import load_csv, save_csv
+    from .csv_writter import save_csv
     from .logger_setup import setup_logger
 except ImportError:
     from env_loader import find_env_file, load_required_env, parse_int_env
-    from csv_writter import load_csv, save_csv
+    from csv_writter import save_csv
     from logger_setup import setup_logger
 
 logger = setup_logger(__name__)
@@ -101,7 +101,6 @@ def parse_sensor_payload(data_r_json):
 
 def save_sensor_payload(data_r_json):
     row = parse_sensor_payload(data_r_json)
-    load_csv()
     save_csv([row])
     return row
 
@@ -117,7 +116,6 @@ def save_sensor_message_idempotent(message_id, row, fingerprint):
             PROCESSED_MESSAGES.move_to_end(message_id)
             return False
 
-        load_csv()
         save_csv([row])
         PROCESSED_MESSAGES[message_id] = fingerprint
         if len(PROCESSED_MESSAGES) > MAX_PROCESSED_MESSAGES:

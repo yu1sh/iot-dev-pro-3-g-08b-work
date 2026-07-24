@@ -1,0 +1,19 @@
+[Unit]
+Description=IoT Sensor Web Dashboard
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+# サーバーを実行するユーザー名を指定（必須）
+User=example-name
+# cloneしたディレクトリの絶対パスを指定（必須）
+WorkingDirectory=/path/to/iot-dev-pro-3-g-08b-work
+# 仮想環境のPythonとweb_dashboard.pyの絶対パスを指定（必須）
+ExecStart=/path/to/iot-dev-pro-3-g-08b-work/venv/bin/python /path/to/iot-dev-pro-3-g-08b-work/server/src/web_dashboard.py
+Restart=always
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

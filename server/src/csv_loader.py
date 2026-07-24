@@ -6,6 +6,14 @@ import os
 import tempfile
 from datetime import datetime
 
+try:
+    from .csv_lock import csv_lock
+except ImportError:
+    try:
+        from csv_lock import csv_lock
+    except ImportError:
+        from server.src.csv_lock import csv_lock
+
 
 CSV_HEADER = ["timestamp", "raspi_id", "dht_temp", "dht_humid", "sensor_id", "status"]
 TIMESTAMP_FORMAT = "%Y%m%d-%H%M%S"
@@ -136,35 +144,36 @@ def merge_uploaded_csv(csv_file, uploaded_file, logger):
     if not imported_rows:
         raise CsvImportError("取り込めるデータ行がありません")
 
-    check_csv(csv_file, logger)
-    existing_rows = _read_rows(csv_file, logger)[1:]
-    existing_set = {tuple(row) for row in existing_rows}
-    added_rows = []
-    duplicate_count = 0
-    for timestamp, row in imported_rows:
-        row_key = tuple(row)
-        if row_key in existing_set:
-            duplicate_count += 1
-            continue
-        existing_set.add(row_key)
-        added_rows.append((timestamp, row))
+    with csv_lock(csv_file):
+        check_csv(csv_file, logger)
+        existing_rows = _read_rows(csv_file, logger)[1:]
+        existing_set = {tuple(row) for row in existing_rows}
+        added_rows = []
+        duplicate_count = 0
+        for timestamp, row in imported_rows:
+            row_key = tuple(row)
+            if row_key in existing_set:
+                duplicate_count += 1
+                continue
+            existing_set.add(row_key)
+            added_rows.append((timestamp, row))
 
-    combined = []
-    for row_number, row in enumerate(existing_rows, start=2):
-        try:
-            timestamp = datetime.strptime(row[0], TIMESTAMP_FORMAT)
-        except ValueError:
-            logger.warning(
-                "Keeping row with invalid timestamp at end path=%s row=%s",
-                csv_file,
-                row_number,
-            )
-            timestamp = datetime.max
-        combined.append((timestamp, row))
-    combined.extend(added_rows)
-    combined.sort(key=lambda item: item[0])
+        combined = []
+        for row_number, row in enumerate(existing_rows, start=2):
+            try:
+                timestamp = datetime.strptime(row[0], TIMESTAMP_FORMAT)
+            except ValueError:
+                logger.warning(
+                    "Keeping row with invalid timestamp at end path=%s row=%s",
+                    csv_file,
+                    row_number,
+                )
+                timestamp = datetime.max
+            combined.append((timestamp, row))
+        combined.extend(added_rows)
+        combined.sort(key=lambda item: item[0])
 
-    _write_rows(csv_file, [CSV_HEADER, *(row for _, row in combined)])
+        _write_rows(csv_file, [CSV_HEADER, *(row for _, row in combined)])
     logger.info(
         "Merged uploaded CSV path=%s added=%s duplicates=%s",
         csv_file,
@@ -176,13 +185,14 @@ def merge_uploaded_csv(csv_file, uploaded_file, logger):
 
 def check_csv(csv_file, logger):
     """ダッシュボードで安全に読み込めるCSVファイルを用意する。"""
-    rows = _read_rows(csv_file, logger)
+    with csv_lock(csv_file):
+        rows = _read_rows(csv_file, logger)
 
-    has_valid_header = rows and rows[0] == CSV_HEADER
-    if rows and not has_valid_header:
-        logger.warning("CSV header is invalid. Replacing it path=%s", csv_file)
+        has_valid_header = rows and rows[0] == CSV_HEADER
+        if rows and not has_valid_header:
+            logger.warning("CSV header is invalid. Replacing it path=%s", csv_file)
 
-    valid_rows = _filter_valid_rows(rows, csv_file, logger, has_valid_header)
-    normalized_rows = [CSV_HEADER, *valid_rows]
-    if rows != normalized_rows:
-        _write_rows(csv_file, normalized_rows)
+        valid_rows = _filter_valid_rows(rows, csv_file, logger, has_valid_header)
+        normalized_rows = [CSV_HEADER, *valid_rows]
+        if rows != normalized_rows:
+            _write_rows(csv_file, normalized_rows)

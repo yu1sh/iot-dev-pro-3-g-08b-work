@@ -2,18 +2,21 @@
 # -*- coding: utf-8 -*-
 
 import csv
+import io
 import os
 from datetime import datetime
 
 from flask import Flask, render_template, request, send_file
 try:
+    from .csv_lock import csv_lock
     from .csv_loader import CsvImportError, check_csv, merge_uploaded_csv
-    from .csv_writter import CSV_FILE, CSV_LOCK
+    from .csv_writter import CSV_FILE
     from .env_loader import find_env_file, load_env_file, parse_bool_env
     from .logger_setup import setup_logger
 except ImportError:
+    from csv_lock import csv_lock
     from csv_loader import CsvImportError, check_csv, merge_uploaded_csv
-    from csv_writter import CSV_FILE, CSV_LOCK
+    from csv_writter import CSV_FILE
     from env_loader import find_env_file, load_env_file, parse_bool_env
     from logger_setup import setup_logger
 
@@ -37,7 +40,7 @@ def index():
 
 
 def render_dashboard(import_message=None, import_succeeded=None):
-    with CSV_LOCK:
+    with csv_lock(CSV_FILE):
         check_csv(CSV_FILE, logger)
         with open(CSV_FILE, newline="", encoding="utf-8") as f:
             csv_data = list(csv.reader(f))
@@ -66,7 +69,7 @@ def import_csv():
         return render_dashboard("CSV形式のファイルを選択してください。", False), 400
 
     try:
-        with CSV_LOCK:
+        with csv_lock(CSV_FILE):
             added_count, duplicate_count = merge_uploaded_csv(
                 CSV_FILE,
                 uploaded_file,
@@ -97,9 +100,15 @@ def download():
     logger.info("Download CSV")
     dt = datetime.now().strftime("%Y%m%d%H%M%S")
     file_name = f"sensor_readings_{dt}.csv"
-    with CSV_LOCK:
+    with csv_lock(CSV_FILE):
         check_csv(CSV_FILE, logger)
-        return send_file(CSV_FILE, as_attachment=True, download_name=file_name)
+        csv_snapshot = io.BytesIO(CSV_FILE.read_bytes())
+    return send_file(
+        csv_snapshot,
+        as_attachment=True,
+        download_name=file_name,
+        mimetype="text/csv",
+    )
 
 
 def main():
