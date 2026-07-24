@@ -72,24 +72,36 @@
       const rows = Array.from(tBody.rows);
       const headerCells = table.tHead.rows[0].cells;
 
+      function applySort(cellIndex, isAsc) {
+        rows.sort((tr1, tr2) => {
+          const tr1Text = tr1.cells[cellIndex].textContent;
+          const tr2Text = tr2.cells[cellIndex].textContent;
+          const result = tr1Text.localeCompare(tr2Text, undefined, { numeric: true });
+          return isAsc ? result : -result;
+        });
+        tBody.append(...rows);
+      }
+
+      const savedColumn = sessionStorage.getItem("sort_column");
+      const savedAsc = sessionStorage.getItem("sort_asc");
+
       for (const th of headerCells) {
         const cellIndex = th.cellIndex;
 
-        let isAsc = true;
+        let isAsc = (savedColumn == cellIndex) ? (savedAsc === "true") : true;
 
         th.addEventListener("click", () => {
-          rows.sort((tr1, tr2) => {
-            const tr1Text = tr1.cells[cellIndex].textContent;
-            const tr2Text = tr2.cells[cellIndex].textContent;
-            const result = tr1Text.localeCompare(tr2Text, undefined, { numeric: true });
-            return isAsc ? result : -result;
-          });
+          applySort(cellIndex, isAsc);
+          sessionStorage.setItem("sort_column", cellIndex);
+          sessionStorage.setItem("sort_asc", isAsc);
 
           isAsc = !isAsc;
-
-          tBody.append(...rows);
         });
       }
-    }
+
+      if (savedColumn !== null && savedAsc !== null) {
+        applySort(parseInt(savedColumn, 10), savedAsc === "true");
+      }
+    } 
   </script>
 </html>
