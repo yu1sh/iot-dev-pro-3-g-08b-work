@@ -88,9 +88,28 @@ def download():
         check_csv(CSV_FILE, logger)
         return send_file(CSV_FILE, as_attachment=True, download_name=file_name)
 
-"""
-@app.routeを使って確認ボタンとその挙動を追加
-"""
+@app.route("/", methods=["GET", "POST"])
+def index():
+    logger.info("Dashboard request received")
+
+    check_csv(CSV_FILE, logger)
+
+    with open(CSV_FILE, newline="", encoding="utf-8") as f:
+        csv_data = list(csv.reader(f))
+        last_timestamp = csv_data[-1][0]
+
+    message = ""
+
+    if request.method == "POST":
+        logger.info("Confirm button pressed")
+        message = "確認しました"
+
+    return render_template(
+        "dashboard.html",
+        input_from_python=csv_data,
+        modified_date=last_timestamp,
+        message=message
+    )
 
 def main():
     debug_mode = load_config()
