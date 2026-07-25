@@ -4,6 +4,7 @@ import json
 import socket
 import threading
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 from pathlib import Path
 from unittest import mock
 from uuid import uuid4
@@ -315,6 +316,39 @@ def test_actual_flask_dashboard_handles_missing_csv_and_downloads_it(
     disposition = download_response.headers["Content-Disposition"]
     assert disposition.startswith("attachment;")
     assert "sensor_readings_" in disposition
+
+
+def test_actual_flask_dashboard_saves_confirmation_timestamp(
+    tmp_path,
+    monkeypatch,
+):
+    csv_file = tmp_path / "sensor_readings.csv"
+    csv_file.write_text(
+        "timestamp,raspi_id,dht_temp,dht_humid,sensor_id,status\n",
+        encoding="utf-8",
+    )
+    confirmation_file = tmp_path / "confirmation_history.csv"
+    monkeypatch.setattr(web_dashboard, "CSV_FILE", csv_file)
+    monkeypatch.setattr(web_dashboard, "CONFIRMATION_FILE", confirmation_file)
+    client = web_dashboard.app.test_client()
+
+    first_response = client.post("/confirm")
+    second_response = client.post("/confirm")
+
+    assert first_response.status_code == 303
+    assert first_response.headers["Location"] == "/?confirmed=1"
+    assert second_response.status_code == 303
+    with confirmation_file.open(newline="", encoding="utf-8") as f:
+        rows = list(csv.reader(f))
+    assert rows[0] == ["confirmed_at"]
+    assert len(rows) == 3
+    for row in rows[1:]:
+        saved_at = datetime.fromisoformat(row[0])
+        assert saved_at.tzinfo is not None
+
+    redirected_response = client.get(first_response.headers["Location"])
+    assert redirected_response.status_code == 200
+    assert "確認時刻を保存しました" in redirected_response.get_data(as_text=True)
 
 
 def test_actual_flask_dashboard_imports_local_csv_in_timestamp_order(

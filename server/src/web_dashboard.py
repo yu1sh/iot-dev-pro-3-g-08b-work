@@ -6,7 +6,7 @@ import io
 import os
 from datetime import datetime
 
-from flask import Flask, render_template, request, send_file
+from flask import Flask, redirect, render_template, request, send_file, url_for
 try:
     from .csv_lock import csv_lock
     from .csv_loader import CsvImportError, check_csv, merge_uploaded_csv
@@ -23,6 +23,8 @@ except ImportError:
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024
 logger = setup_logger(__name__)
+CONFIRMATION_FILE = CSV_FILE.parent / "confirmation_history.csv"
+
 
 def load_config():
     load_env_file(find_env_file("server"))
@@ -36,6 +38,8 @@ def load_config():
 def index():
     logger.info("Dashboard request received")
 
+    if request.args.get("confirmed") == "1":
+        return render_dashboard("確認時刻を保存しました", True)
     return render_dashboard()
 
 
@@ -89,11 +93,32 @@ def import_csv():
 
 @app.route("/confirm", methods=["POST"])
 def confirm():
-    logger.info("Confirm button pressed")
-    return render_dashboard(
-        import_message="確認しました",
-        import_succeeded=True,
+    confirmed_at = datetime.now().astimezone().isoformat(timespec="seconds")
+
+    try:
+        with csv_lock(CONFIRMATION_FILE):
+            needs_header = (
+                not CONFIRMATION_FILE.exists()
+                or CONFIRMATION_FILE.stat().st_size == 0
+            )
+            with CONFIRMATION_FILE.open("a", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                if needs_header:
+                    writer.writerow(["confirmed_at"])
+                writer.writerow([confirmed_at])
+    except OSError:
+        logger.exception(
+            "Failed to save confirmation timestamp path=%s",
+            CONFIRMATION_FILE,
+        )
+        return render_dashboard("確認時刻の保存に失敗しました。", False), 500
+
+    logger.info(
+        "Confirmation timestamp saved path=%s confirmed_at=%s",
+        CONFIRMATION_FILE,
+        confirmed_at,
     )
+    return redirect(url_for("index", confirmed="1"), code=303)
 
 @app.route('/files')
 def download():

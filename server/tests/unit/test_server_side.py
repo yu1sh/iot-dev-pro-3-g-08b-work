@@ -126,6 +126,18 @@ def fake_send_file(
     )
 
 
+def fake_redirect(location, code=302):
+    return FakeResponse("", status_code=code, headers={"Location": location})
+
+
+def fake_url_for(endpoint, **values):
+    path = "/" if endpoint == "index" else f"/{endpoint}"
+    if not values:
+        return path
+    query = "&".join(f"{key}={value}" for key, value in values.items())
+    return f"{path}?{query}"
+
+
 def load_module(module_name, file_path):
     spec = importlib.util.spec_from_file_location(module_name, file_path)
     module = importlib.util.module_from_spec(spec)
@@ -147,9 +159,11 @@ class ServerModuleTestCase(unittest.TestCase):
 
         fake_flask = types.ModuleType("flask")
         fake_flask.Flask = FakeFlask
+        fake_flask.redirect = fake_redirect
         fake_flask.render_template = fake_render_template
-        fake_flask.request = types.SimpleNamespace(files={})
+        fake_flask.request = types.SimpleNamespace(args={}, files={})
         fake_flask.send_file = fake_send_file
+        fake_flask.url_for = fake_url_for
         sys.modules["flask"] = fake_flask
 
         sys.path.insert(0, str(SERVER_SRC))
