@@ -253,6 +253,29 @@ def test_parse_rejects_non_object_and_noncanonical_uuid():
         sensor_receiver.parse_sensor_payload(json.dumps(payload(uppercase_id)))
 
 
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"timestamp": "2026-07-23T12:00:00"},
+        {"timestamp": "20260230-120000"},
+        {"raspi_id": ""},
+        {"raspi_id": "   "},
+        {"sensor_id": ""},
+        {"sensor_id": "\t"},
+    ],
+)
+def test_receiver_rejects_invalid_timestamp_and_blank_identifiers(overrides):
+    client = ScriptedSocket([json.dumps(payload(**overrides)).encode() + b"\n"])
+
+    sensor_receiver.handle_client_connection(client, ("127.0.0.1", 50000))
+
+    assert json.loads(client.sent) == {
+        "status": "error",
+        "code": "invalid_payload",
+    }
+    assert not server_csv.CSV_FILE.exists()
+
+
 def test_actual_flask_dashboard_renders_template_and_normalizes_csv(tmp_path, monkeypatch):
     csv_file = tmp_path / "sensor_readings.csv"
     csv_file.write_text(

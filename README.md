@@ -132,8 +132,10 @@ CSVはクライアント・サーバー共通で次の6列です。
 timestamp,raspi_id,dht_temp,dht_humid,sensor_id,status
 ```
 
-`timestamp`はローカル時刻の`YYYYMMDD-HHMMSS`形式です。`status`は
-`OK`、`WARNING`、`ERROR`、`SEND_FAILED`のいずれかです。
+`timestamp`はローカル時刻の`YYYYMMDD-HHMMSS`形式です。受信側は形式と
+実在する日時であることを検証し、`raspi_id`または`sensor_id`が空欄の場合も
+受信を拒否します。`status`は`OK`、`WARNING`、`ERROR`、`SEND_FAILED`の
+いずれかです。
 
 ## 出力先
 

@@ -272,6 +272,48 @@ class SensorReceiverPayloadTest(ServerModuleTestCase):
         with self.assertRaises(ValueError):
             self.server_receiver.parse_sensor_payload(json.dumps(payload))
 
+    def test_parse_sensor_payload_rejects_invalid_timestamp(self):
+        payload = [{
+            "message_id": self.MESSAGE_ID,
+            "timestamp": "20260703-143000",
+            "raspi_id": "raspi_001",
+            "sensor_id": "dht_1",
+            "tempe_dht_1": 24.5,
+            "humid_dht_1": 56.0,
+            "status": "OK",
+        }]
+
+        for invalid_timestamp in (
+            "2026-07-03T14:30:00",
+            "20260703-14300",
+            "20260230-143000",
+            20260703143000,
+        ):
+            with self.subTest(timestamp=invalid_timestamp):
+                payload[0]["timestamp"] = invalid_timestamp
+                with self.assertRaises(ValueError):
+                    self.server_receiver.parse_sensor_payload(json.dumps(payload))
+
+    def test_parse_sensor_payload_rejects_blank_identifiers(self):
+        payload = [{
+            "message_id": self.MESSAGE_ID,
+            "timestamp": "20260703-143000",
+            "raspi_id": "raspi_001",
+            "sensor_id": "dht_1",
+            "tempe_dht_1": 24.5,
+            "humid_dht_1": 56.0,
+            "status": "OK",
+        }]
+
+        for field_name in ("raspi_id", "sensor_id"):
+            for blank_value in ("", " \t"):
+                with self.subTest(field=field_name, value=blank_value):
+                    payload[0]["raspi_id"] = "raspi_001"
+                    payload[0]["sensor_id"] = "dht_1"
+                    payload[0][field_name] = blank_value
+                    with self.assertRaisesRegex(ValueError, f"{field_name} must not be blank"):
+                        self.server_receiver.parse_sensor_payload(json.dumps(payload))
+
 
 class SensorReceiverProtocolTest(ServerModuleTestCase):
     MESSAGE_ID_1 = "12345678-1234-4234-8234-123456789abc"

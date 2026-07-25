@@ -8,7 +8,9 @@ import threading
 import json
 import uuid
 import hashlib
+import re
 from collections import OrderedDict
+from datetime import datetime
 try:
     from .env_loader import find_env_file, load_required_env, parse_int_env
     from .csv_writter import save_csv
@@ -24,6 +26,8 @@ READ_TIMEOUT = 10
 RECV_CHUNK_SIZE = 4096
 MAX_PAYLOAD_SIZE = 64 * 1024
 MAX_PROCESSED_MESSAGES = 100000
+TIMESTAMP_FORMAT = "%Y%m%d-%H%M%S"
+TIMESTAMP_PATTERN = re.compile(r"\d{8}-\d{6}", re.ASCII)
 PROCESSED_MESSAGES = OrderedDict()
 PROCESSED_MESSAGES_LOCK = threading.Lock()
 
@@ -34,6 +38,20 @@ class PayloadTooLargeError(ValueError):
 
 class DuplicateMessageConflictError(ValueError):
     pass
+
+
+def validate_timestamp(timestamp):
+    if not isinstance(timestamp, str) or not TIMESTAMP_PATTERN.fullmatch(timestamp):
+        raise ValueError("timestamp must use YYYYMMDD-HHMMSS format")
+    try:
+        datetime.strptime(timestamp, TIMESTAMP_FORMAT)
+    except ValueError as exc:
+        raise ValueError("timestamp must be a valid date and time") from exc
+
+
+def validate_identifier(value, field_name):
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{field_name} must not be blank")
 
 
 def load_config():
@@ -73,6 +91,9 @@ def parse_sensor_message(data_r_json):
     timestamp = data0["timestamp"]
     raspi_id = data0["raspi_id"]
     sensor_id = data0["sensor_id"]
+    validate_timestamp(timestamp)
+    validate_identifier(raspi_id, "raspi_id")
+    validate_identifier(sensor_id, "sensor_id")
     dht_temp = data0["tempe_dht_1"]
     dht_humid = data0["humid_dht_1"]
     status = data0["status"]
